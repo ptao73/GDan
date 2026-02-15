@@ -44,7 +44,7 @@ export default function App() {
         </p>
       ) : null}
 
-      <section className="layout-grid">
+      <section className="layout-grid main-grid">
         <article className="panel cards-panel">
           <h2>手牌区</h2>
           <CardMatrix

@@ -69,7 +69,7 @@ export default function CardMatrix({
                   {cardsInCell.length === 0 ? (
                     <span className="matrix-empty-slot" />
                   ) : (
-                    <div className="matrix-stack">
+                    <div className={`matrix-stack ${cardsInCell.length > 1 ? 'has-pair' : ''}`}>
                       {cardsInCell.map((card) => (
                         <PlayingCard
                           key={card.id}
@@ -92,7 +92,7 @@ export default function CardMatrix({
         <span className="joker-label">王</span>
         <div className="joker-lane">
           {sortedJokers.length > 0 ? (
-            <div className="matrix-stack joker-stack">
+            <div className={`matrix-stack joker-stack ${sortedJokers.length > 1 ? 'has-pair' : ''}`}>
               {sortedJokers.map((card) => (
                 <PlayingCard
                   key={card.id}
