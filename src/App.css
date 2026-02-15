@@ -261,11 +261,11 @@ button.ghost:hover {
 
 .matrix-board {
   --matrix-gap: 1px;
-  --matrix-side-col: 30px;
-  --matrix-col-w: 40px;
-  --matrix-row-h: 58px;
-  --matrix-card-w: 34px;
-  --matrix-lift: 5px;
+  --matrix-side-col: 42px;
+  --matrix-col-w: 48px;
+  --matrix-row-h: 72px;
+  --matrix-card-w: 46px;
+  --matrix-lift: 8px;
   --row-overlap: calc(var(--matrix-row-h) * 0.25);
   position: relative;
   margin: 10px 0 12px;
@@ -284,7 +284,9 @@ button.ghost:hover {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.76),
     0 8px 18px rgba(85, 65, 38, 0.12);
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .card-matrix-grid {
@@ -345,12 +347,12 @@ button.ghost:hover {
 }
 
 .matrix-corner {
-  min-height: 30px;
+  min-height: 34px;
 }
 
 .matrix-rank-head {
-  min-height: 30px;
-  font-size: 14px;
+  min-height: 34px;
+  font-size: 17px;
   font-weight: 700;
   color: #5a452a;
   position: sticky;
@@ -366,7 +368,7 @@ button.ghost:hover {
 
 .matrix-suit-head {
   min-height: var(--matrix-row-h);
-  font-size: 16px;
+  font-size: 22px;
   color: #2f261b;
 }
 
@@ -377,7 +379,7 @@ button.ghost:hover {
 .matrix-card-cell {
   position: relative;
   min-height: var(--matrix-row-h);
-  border-radius: 7px;
+  border-radius: 8px;
   border: 1px dashed rgba(197, 180, 153, 0.86);
   background: rgba(255, 255, 255, 0.28);
   display: flex;
@@ -404,7 +406,7 @@ button.ghost:hover {
 .matrix-empty-slot {
   width: min(var(--matrix-card-w), calc(100% - 2px));
   aspect-ratio: 2 / 3;
-  border-radius: 6px;
+  border-radius: 7px;
   border: 2px dashed rgba(196, 176, 145, 0.7);
   background: rgba(255, 255, 255, 0.14);
 }
@@ -412,7 +414,7 @@ button.ghost:hover {
 .matrix-stack {
   position: relative;
   width: 100%;
-  min-height: calc(var(--matrix-row-h) - 6px);
+  min-height: calc(var(--matrix-row-h) - 4px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -425,7 +427,7 @@ button.ghost:hover {
 }
 
 .matrix-stack.has-pair {
-  min-height: calc(var(--matrix-row-h) - 2px);
+  min-height: var(--matrix-row-h);
 }
 
 .matrix-stack.has-pair .playing-card {
@@ -435,24 +437,24 @@ button.ghost:hover {
 .matrix-stack.has-pair .playing-card:nth-child(1) {
   left: 50%;
   top: 50%;
-  transform: translate(-62%, -50%);
+  transform: translate(-66%, -50%);
   z-index: 1;
 }
 
 .matrix-stack.has-pair .playing-card:nth-child(2) {
   left: 50%;
   top: 50%;
-  transform: translate(-38%, -50%);
+  transform: translate(-34%, -50%);
   z-index: 2;
 }
 
 .matrix-stack.has-pair .playing-card.selected:nth-child(1) {
-  transform: translate(-62%, calc(-50% - var(--matrix-lift)));
+  transform: translate(-66%, calc(-50% - var(--matrix-lift)));
   z-index: 11;
 }
 
 .matrix-stack.has-pair .playing-card.selected:nth-child(2) {
-  transform: translate(-38%, calc(-50% - var(--matrix-lift)));
+  transform: translate(-34%, calc(-50% - var(--matrix-lift)));
   z-index: 12;
 }
 
@@ -465,22 +467,22 @@ button.ghost:hover {
 .matrix-card-cell .card-br,
 .matrix-joker-row .card-tl,
 .matrix-joker-row .card-br {
-  font-size: 8px;
+  font-size: 9px;
 }
 
 .matrix-card-cell .card-center,
 .matrix-joker-row .card-center {
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .matrix-card-cell .card-suit-small,
 .matrix-joker-row .card-suit-small {
-  font-size: 7px;
+  font-size: 8px;
 }
 
 .matrix-card-cell .playing-card.joker .card-center,
 .matrix-joker-row .playing-card.joker .card-center {
-  font-size: 9px;
+  font-size: 11px;
 }
 
 .matrix-joker-row {
@@ -494,21 +496,21 @@ button.ghost:hover {
 
 .joker-label {
   width: var(--matrix-side-col);
-  min-height: 30px;
-  font-size: 16px;
+  min-height: 34px;
+  font-size: 22px;
   color: #433727;
   flex-shrink: 0;
 }
 
 .joker-lane {
   flex: 1;
-  min-height: calc(var(--matrix-row-h) - 6px);
+  min-height: calc(var(--matrix-row-h) - 4px);
   display: flex;
   align-items: center;
 }
 
 .joker-stack {
-  min-height: calc(var(--matrix-row-h) - 2px);
+  min-height: var(--matrix-row-h);
 }
 
 .joker-empty {
@@ -518,7 +520,7 @@ button.ghost:hover {
 
 .matrix-board .hint {
   margin-top: 8px;
-  font-size: 13px;
+  font-size: 14px;
   color: #5f503d;
 }
 
@@ -924,58 +926,7 @@ button.ghost:hover {
   }
 
   .matrix-board {
-    --matrix-gap: 1px;
-    --matrix-side-col: 22px;
-    --matrix-col-w: 22px;
-    --matrix-row-h: 34px;
-    --matrix-card-w: 20px;
-    --matrix-lift: 3px;
-    --row-overlap: calc(var(--matrix-row-h) * 0.25);
-    padding: 6px;
-    border-radius: 12px;
-  }
-
-  .matrix-head-row,
-  .matrix-row {
-    grid-template-columns: var(--matrix-side-col) repeat(13, var(--matrix-col-w));
-    column-gap: var(--matrix-gap);
-  }
-
-  .matrix-corner,
-  .matrix-rank-head {
-    min-height: 20px;
-    border-radius: 5px;
-  }
-
-  .matrix-rank-head {
-    font-size: 10px;
-  }
-
-  .matrix-suit-head,
-  .joker-label {
-    font-size: 12px;
-    border-radius: 5px;
-  }
-
-  .matrix-card-cell .card-tl,
-  .matrix-card-cell .card-br,
-  .matrix-joker-row .card-tl,
-  .matrix-joker-row .card-br {
-    font-size: 5px;
-  }
-
-  .matrix-card-cell .card-center,
-  .matrix-joker-row .card-center {
-    font-size: 8px;
-  }
-
-  .matrix-card-cell .playing-card.joker .card-center,
-  .matrix-joker-row .playing-card.joker .card-center {
-    font-size: 6px;
-  }
-
-  .matrix-board .hint {
-    font-size: 11px;
+    padding: 8px;
   }
 
   .bottom-action-bar {
@@ -1007,40 +958,6 @@ button.ghost:hover {
   }
 
   .matrix-board {
-    --matrix-side-col: 18px;
-    --matrix-col-w: 18px;
-    --matrix-row-h: 28px;
-    --matrix-card-w: 16px;
-    --matrix-lift: 2px;
-    --row-overlap: calc(var(--matrix-row-h) * 0.25);
     padding: 5px;
-  }
-
-  .matrix-corner,
-  .matrix-rank-head {
-    min-height: 16px;
-  }
-
-  .matrix-rank-head {
-    font-size: 9px;
-  }
-
-  .matrix-suit-head,
-  .joker-label {
-    font-size: 10px;
-  }
-
-  .matrix-card-cell .card-center,
-  .matrix-joker-row .card-center {
-    font-size: 7px;
-  }
-
-  .matrix-card-cell .playing-card.joker .card-center,
-  .matrix-joker-row .playing-card.joker .card-center {
-    font-size: 5px;
-  }
-
-  .matrix-board .hint {
-    font-size: 10px;
   }
 }
