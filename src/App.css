@@ -156,106 +156,161 @@ button.ghost:hover {
   color: var(--warn);
 }
 
-/* === 手牌区容器 === */
-.cards-wrap {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin: 12px 0;
-  min-height: 90px;
-}
-
-/* === 13×4 矩阵面板 === */
+/* === 13×4 扑克牌矩阵 === */
 .matrix-board {
-  position: sticky;
-  top: calc(8px + env(safe-area-inset-top));
-  z-index: 5;
   background: rgba(255, 250, 241, 0.96);
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 10px;
   margin: 8px 0 12px;
-  backdrop-filter: blur(6px);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
-.rank-strip {
+.card-matrix-grid {
   display: grid;
-  grid-template-columns: repeat(13, minmax(0, 1fr));
-  gap: 6px;
-  margin-bottom: 8px;
+  grid-template-columns: 36px repeat(13, minmax(48px, 1fr));
+  gap: 3px;
+  min-width: 670px;
+  padding-top: 10px;
 }
 
-.rank-tag {
-  text-align: center;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 3px 0;
-  background: #fffefb;
-  font-size: 12px;
-  font-weight: 600;
+/* 表头单元格通用样式 */
+.matrix-corner,
+.matrix-rank-head,
+.matrix-suit-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 4px 0;
+  border-radius: 6px;
 }
 
-.rank-tag.trump {
+.matrix-corner {
+  background: #efe4d1;
+  color: #5d4a30;
+  font-size: 11px;
+  border: 1px solid #d8ccb9;
+}
+
+.matrix-rank-head {
+  background: #f5eee3;
+  color: #5d4a30;
+  border: 1px solid #d8ccb9;
+}
+
+.matrix-rank-head.trump {
   background: #fef2f0;
   border-color: #f4b5ab;
   color: #b42318;
 }
 
-.matrix-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.matrix-row {
-  display: grid;
-  grid-template-columns: 36px repeat(13, minmax(0, 1fr));
-  gap: 4px;
-}
-
-.matrix-label,
-.matrix-cell {
-  text-align: center;
-  font-size: 12px;
-  border-radius: 6px;
-  padding: 3px 0;
-}
-
-.matrix-label {
-  border: 1px solid #d8ccb9;
+.matrix-suit-head {
   background: #f5eee3;
-  font-weight: 600;
-  color: #5d4a30;
-}
-
-.matrix-label.head {
-  background: #efe4d1;
-}
-
-.matrix-label.suit {
   color: #2a2a2a;
+  border: 1px solid #d8ccb9;
 }
 
-.matrix-label.suit.heart {
+.matrix-suit-head.red {
   color: #b42318;
 }
 
-.matrix-cell {
-  border: 1px solid #ece2d1;
-  background: #fffdfa;
-  color: #5f5a52;
+/* 卡片单元格 */
+.matrix-card-cell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 62px;
+  border-radius: 6px;
+  padding: 2px;
 }
 
-.matrix-label.trump-column,
-.matrix-cell.trump-column {
-  background: #fff4f2;
-  border-color: #eeb2a8;
+.matrix-card-cell.empty {
+  background: rgba(0, 0, 0, 0.02);
+  border: 1px dashed rgba(0, 0, 0, 0.06);
 }
 
-.matrix-cell.wildcard-cell {
-  background: #ffe2dc;
-  color: #9f1239;
-  font-weight: 700;
+.matrix-card-cell.trump-col {
+  background: rgba(254, 242, 240, 0.5);
+}
+
+.matrix-card-cell.wild-col {
+  background: rgba(255, 226, 220, 0.4);
+}
+
+/* 两张相同牌的堆叠效果 */
+.matrix-card-cell .playing-card + .playing-card {
+  position: absolute;
+  top: 6px;
+  left: calc(50% - 17px);
+  z-index: 2;
+}
+
+.matrix-card-cell .playing-card.selected {
+  z-index: 10;
+}
+
+/* 矩阵内扑克牌缩小尺寸 */
+.matrix-card-cell .playing-card {
+  width: 42px;
+  height: 58px;
+}
+
+.matrix-card-cell .card-tl,
+.matrix-card-cell .card-br {
+  font-size: 9px;
+}
+
+.matrix-card-cell .card-suit-small {
+  font-size: 8px;
+}
+
+.matrix-card-cell .card-center {
+  font-size: 16px;
+}
+
+.matrix-card-cell .playing-card.joker .card-center {
+  font-size: 11px;
+}
+
+/* 王牌行（大小王） */
+.matrix-joker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 8px 0 4px;
+  border-top: 1px dashed var(--line);
+}
+
+.matrix-joker-row .matrix-suit-head {
+  width: 36px;
+  flex-shrink: 0;
+}
+
+.matrix-joker-row .playing-card {
+  width: 42px;
+  height: 58px;
+}
+
+.matrix-joker-row .card-tl,
+.matrix-joker-row .card-br {
+  font-size: 9px;
+}
+
+.matrix-joker-row .card-suit-small {
+  font-size: 8px;
+}
+
+.matrix-joker-row .card-center {
+  font-size: 16px;
+}
+
+.matrix-joker-row .playing-card.joker .card-center {
+  font-size: 11px;
 }
 
 /* === 选牌面板 === */
@@ -613,22 +668,37 @@ button.ghost:hover {
     gap: 4px;
   }
 
-  .matrix-row {
-    grid-template-columns: 28px repeat(13, minmax(0, 1fr));
-    gap: 3px;
+  /* 手机矩阵：缩小牌面 */
+  .card-matrix-grid {
+    grid-template-columns: 28px repeat(13, minmax(40px, 1fr));
+    min-width: 560px;
   }
 
-  .matrix-label,
-  .matrix-cell {
-    font-size: 11px;
-    padding: 2px 0;
+  .matrix-card-cell {
+    min-height: 54px;
   }
 
-  /* 矩阵面板：手机上取消 sticky，改为可横向滚动 */
-  .matrix-board {
-    position: static;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+  .matrix-card-cell .playing-card,
+  .matrix-joker-row .playing-card {
+    width: 36px;
+    height: 50px;
+  }
+
+  .matrix-card-cell .card-tl,
+  .matrix-card-cell .card-br,
+  .matrix-joker-row .card-tl,
+  .matrix-joker-row .card-br {
+    font-size: 8px;
+  }
+
+  .matrix-card-cell .card-center,
+  .matrix-joker-row .card-center {
+    font-size: 14px;
+  }
+
+  .matrix-card-cell .playing-card.joker .card-center,
+  .matrix-joker-row .playing-card.joker .card-center {
+    font-size: 9px;
   }
 
   .bottom-action-bar {
@@ -658,7 +728,14 @@ button.ghost:hover {
     font-size: 20px;
   }
 
-  .cards-wrap {
-    gap: 4px;
+  .matrix-card-cell .playing-card,
+  .matrix-joker-row .playing-card {
+    width: 32px;
+    height: 44px;
+  }
+
+  .matrix-card-cell .card-center,
+  .matrix-joker-row .card-center {
+    font-size: 12px;
   }
 }

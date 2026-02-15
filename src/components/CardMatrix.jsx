@@ -1,58 +1,100 @@
+import { Fragment } from 'react';
+import PlayingCard from './PlayingCard.jsx';
+
 const MATRIX_RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 const MATRIX_SUITS = [
-  { key: 'S', label: '♠' },
-  { key: 'H', label: '♥' },
-  { key: 'C', label: '♣' },
-  { key: 'D', label: '♦' }
+  { key: 'S', label: '♠', red: false },
+  { key: 'H', label: '♥', red: true },
+  { key: 'C', label: '♣', red: false },
+  { key: 'D', label: '♦', red: true }
 ];
 
-export default function CardMatrix({ matrixCounts, rankTotals, trumpRank }) {
+// 13×4 矩阵：每个格子里放实际的扑克牌，点击选中/取消
+export default function CardMatrix({
+  remainingCards,
+  selectedIds,
+  toggleCard,
+  trumpRank,
+  isSolving
+}) {
+  // 按 "花色-点数" 分组，王牌单独处理
+  const cardMap = {};
+  const jokers = [];
+
+  for (const card of remainingCards) {
+    if (card.rank === 'SJ' || card.rank === 'BJ') {
+      jokers.push(card);
+      continue;
+    }
+    const key = `${card.suit}-${card.rank}`;
+    if (!cardMap[key]) cardMap[key] = [];
+    cardMap[key].push(card);
+  }
+
   return (
     <div className="matrix-board">
-      <div className="rank-strip">
+      <div className="card-matrix-grid">
+        {/* 表头行：点数 2-A */}
+        <span className="matrix-corner" />
         {MATRIX_RANKS.map((rank) => (
-          <span key={rank} className={`rank-tag ${rank === trumpRank ? 'trump' : ''}`}>
+          <span
+            key={`h-${rank}`}
+            className={`matrix-rank-head ${rank === trumpRank ? 'trump' : ''}`}
+          >
             {rank}
           </span>
         ))}
-      </div>
-      <div className="matrix-grid" role="table" aria-label="13x4 手牌矩阵">
-        <div className="matrix-row matrix-head">
-          <span className="matrix-label head">花色</span>
-          {MATRIX_RANKS.map((rank) => (
-            <span
-              key={`head-${rank}`}
-              className={`matrix-label ${rank === trumpRank ? 'trump-column' : ''}`}
-            >
-              {rankTotals[rank]}
-            </span>
-          ))}
-        </div>
+
+        {/* 4 行花色 × 13 列点数 */}
         {MATRIX_SUITS.map((suit) => (
-          <div className="matrix-row" key={suit.key}>
-            <span className={`matrix-label suit ${suit.key === 'H' ? 'heart' : ''}`}>
+          <Fragment key={suit.key}>
+            <span className={`matrix-suit-head ${suit.red ? 'red' : ''}`}>
               {suit.label}
             </span>
             {MATRIX_RANKS.map((rank) => {
-              const key = `${suit.key}-${rank}`;
-              const count = matrixCounts[key] || 0;
-              const isTrumpColumn = rank === trumpRank;
-              const isWildcardCell = suit.key === 'H' && rank === trumpRank;
+              const cellKey = `${suit.key}-${rank}`;
+              const cards = cardMap[cellKey] || [];
+              const isTrump = rank === trumpRank;
+              const isWild = suit.key === 'H' && rank === trumpRank;
+
               return (
-                <span
-                  key={key}
-                  className={`matrix-cell ${isTrumpColumn ? 'trump-column' : ''} ${
-                    isWildcardCell ? 'wildcard-cell' : ''
-                  }`}
+                <div
+                  key={cellKey}
+                  className={`matrix-card-cell${isTrump ? ' trump-col' : ''}${isWild ? ' wild-col' : ''}${cards.length === 0 ? ' empty' : ''}`}
                 >
-                  {count}
-                </span>
+                  {cards.map((card) => (
+                    <PlayingCard
+                      key={card.id}
+                      card={card}
+                      isSelected={selectedIds.includes(card.id)}
+                      onClick={() => toggleCard(card.id)}
+                      disabled={isSolving}
+                    />
+                  ))}
+                </div>
               );
             })}
-          </div>
+          </Fragment>
         ))}
       </div>
-      <p className="hint">13×4 矩阵：级牌列高亮，♥级牌即逢人配。</p>
+
+      {/* 王牌行 */}
+      {jokers.length > 0 && (
+        <div className="matrix-joker-row">
+          <span className="matrix-suit-head">王</span>
+          {jokers.map((card) => (
+            <PlayingCard
+              key={card.id}
+              card={card}
+              isSelected={selectedIds.includes(card.id)}
+              onClick={() => toggleCard(card.id)}
+              disabled={isSolving}
+            />
+          ))}
+        </div>
+      )}
+
+      <p className="hint">点选矩阵中的牌进行选择。级牌列高亮，♥级牌即逢人配。</p>
     </div>
   );
 }

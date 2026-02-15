@@ -3,7 +3,6 @@ import { useGameState } from './hooks/useGameState.js';
 import Header from './components/Header.jsx';
 import StatusBar from './components/StatusBar.jsx';
 import CardMatrix from './components/CardMatrix.jsx';
-import CardHand from './components/CardHand.jsx';
 import SelectionPanel from './components/SelectionPanel.jsx';
 import ComboList from './components/ComboList.jsx';
 import ScoreResult from './components/ScoreResult.jsx';
@@ -45,15 +44,10 @@ export default function App() {
         <article className="panel cards-panel">
           <h2>手牌区</h2>
           <CardMatrix
-            matrixCounts={g.matrixCounts}
-            rankTotals={g.rankTotals}
-            trumpRank={g.trumpRank}
-          />
-          <p className="hint">点选牌后在下方查看可组成牌型，确认后成组。</p>
-          <CardHand
             remainingCards={g.remainingCards}
             selectedIds={g.selectedIds}
             toggleCard={g.toggleCard}
+            trumpRank={g.trumpRank}
             isSolving={g.isSolving}
           />
           <SelectionPanel
