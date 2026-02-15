@@ -592,6 +592,32 @@ button.ghost:hover {
   color: #95641d;
 }
 
+.combo-compare {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.combo-compare-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.combo-column {
+  border: 1px solid rgba(194, 175, 146, 0.76);
+  border-radius: 12px;
+  background: rgba(255, 253, 248, 0.72);
+  padding: 10px;
+}
+
+.combo-column h3 {
+  margin: 0;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed rgba(194, 175, 146, 0.78);
+  font-size: 22px;
+}
+
 .combo-list,
 .history-list,
 .suggest-list {
@@ -602,26 +628,56 @@ button.ghost:hover {
   gap: 8px;
 }
 
-.combo-list li,
+.combo-list li {
+  border: 1px solid rgba(194, 175, 146, 0.76);
+  background: rgba(255, 253, 248, 0.96);
+  border-radius: 10px;
+  padding: 8px 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: flex-start;
+  animation: slide-in 260ms ease;
+}
+
+.combo-list.ai-list li {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.combo-line {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.combo-line > span:first-child {
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.combo-score-chip {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #5a4b37;
+  border: 1px solid rgba(190, 171, 141, 0.72);
+  background: #f8f2e7;
+}
+
+.combo-empty {
+  color: #72624d;
+  justify-content: center;
+}
+
 .history-list li,
 .suggest-list li {
   border: 1px solid rgba(194, 175, 146, 0.76);
   background: rgba(255, 253, 248, 0.96);
   border-radius: 10px;
   padding: 8px 10px;
-}
-
-.combo-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  align-items: flex-start;
-  animation: slide-in 260ms ease;
-}
-
-.combo-list li span {
-  flex: 1;
-  line-height: 1.4;
 }
 
 .combo-list li.same {
@@ -637,6 +693,38 @@ button.ghost:hover {
 .combo-list li.added {
   border-color: rgba(76, 156, 108, 0.55);
   background: #eaf8ef;
+}
+
+.combo-score-compare {
+  border: 1px dashed rgba(194, 175, 146, 0.86);
+  border-radius: 12px;
+  background: rgba(255, 253, 248, 0.78);
+  padding: 10px;
+}
+
+.combo-score-compare h3 {
+  margin: 0 0 8px;
+  font-size: 22px;
+}
+
+.score-compare-grid {
+  display: grid;
+  grid-template-columns: 0.8fr 1fr 1fr;
+  gap: 6px;
+}
+
+.score-compare-grid p {
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid rgba(194, 175, 146, 0.72);
+  border-radius: 8px;
+  background: rgba(255, 253, 248, 0.96);
+}
+
+.score-compare-grid p.head {
+  font-weight: 700;
+  color: #4c3d2b;
+  background: #f7efde;
 }
 
 .diff-legend {
@@ -870,6 +958,10 @@ button.ghost:hover {
     grid-template-columns: 1fr;
   }
 
+  .combo-compare-grid {
+    grid-template-columns: 1fr;
+  }
+
   .hero-actions {
     width: 100%;
     align-items: stretch;
@@ -923,6 +1015,29 @@ button.ghost:hover {
 
   .score-grid {
     grid-template-columns: 1fr;
+  }
+
+  .combo-column h3,
+  .combo-score-compare h3 {
+    font-size: 18px;
+  }
+
+  .combo-list li {
+    grid-template-columns: 1fr;
+  }
+
+  .combo-score-chip {
+    font-size: 10px;
+  }
+
+  .score-compare-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .score-compare-grid p {
+    font-size: 12px;
+    padding: 5px 6px;
   }
 
   .matrix-board {

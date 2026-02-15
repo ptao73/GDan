@@ -5,8 +5,6 @@ import StatusBar from './components/StatusBar.jsx';
 import CardMatrix from './components/CardMatrix.jsx';
 import SelectionPanel from './components/SelectionPanel.jsx';
 import ComboList from './components/ComboList.jsx';
-import ScoreResult from './components/ScoreResult.jsx';
-import AiResult from './components/AiResult.jsx';
 import StatsPanel from './components/StatsPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
 import BottomBar from './components/BottomBar.jsx';
@@ -67,14 +65,6 @@ export default function App() {
 
         <article className="panel combos-panel">
           <h2>已组牌区</h2>
-          <ComboList
-            userCombos={g.userCombos}
-            aiResult={g.aiResult}
-            aiComboKeySet={g.aiComboKeySet}
-            aiHasRecommendation={g.aiHasRecommendation}
-            removeGroup={g.removeGroup}
-            isSolving={g.isSolving}
-          />
           <div className="submit-actions">
             <span className={`assign-state ${g.canAnalyze ? 'ok' : 'pending'}`}>
               已分配 {g.assignedCardsCount}/27
@@ -83,19 +73,20 @@ export default function App() {
               {g.isSolving ? '专家正在计算中...' : '开始分析（AI对照）'}
             </button>
           </div>
+          <ComboList
+            userCombos={g.userCombos}
+            trumpRank={g.trumpRank}
+            aiResult={g.aiResult}
+            aiComboKeySet={g.aiComboKeySet}
+            userComboKeySet={g.userComboKeySet}
+            aiHasRecommendation={g.aiHasRecommendation}
+            aiStatus={g.aiStatus}
+            userScore={g.userScore}
+            aiScoreView={g.aiScoreView}
+            removeGroup={g.removeGroup}
+            isSolving={g.isSolving}
+          />
         </article>
-      </section>
-
-      <section className="layout-grid results-grid">
-        <ScoreResult userScore={g.userScore} />
-        <AiResult
-          aiResult={g.aiResult}
-          aiStatus={g.aiStatus}
-          userScore={g.userScore}
-          aiScoreView={g.aiScoreView}
-          userComboKeySet={g.userComboKeySet}
-          aiHasRecommendation={g.aiHasRecommendation}
-        />
       </section>
 
       <section className="layout-grid">
