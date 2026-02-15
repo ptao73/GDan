@@ -1,0 +1,42 @@
+:root {
+  --bg: #f4efe6;
+  --bg-soft: #ece2d0;
+  --ink: #1b1b1b;
+  --primary: #0d3b47;
+  --primary-soft: #1d6071;
+  --accent: #c44536;
+  --accent-soft: #e08f6a;
+  --ok: #18794e;
+  --warn: #9a6700;
+  --card: #fffaf1;
+  --line: #d7c8b0;
+  --muted: #5e5e5e;
+  --shadow: 0 14px 36px rgba(13, 59, 71, 0.17);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  color: var(--ink);
+  background:
+    radial-gradient(circle at 15% 20%, rgba(224, 143, 106, 0.24), transparent 30%),
+    radial-gradient(circle at 85% 10%, rgba(13, 59, 71, 0.24), transparent 35%),
+    linear-gradient(165deg, #f7f1e4 0%, #f0e6d3 45%, #e8dcc5 100%);
+  font-family: 'STKaiti', 'KaiTi', 'Baskerville', serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}

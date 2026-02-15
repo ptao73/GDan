@@ -1,0 +1,81 @@
+/* === 统计面板专属样式 === */
+
+/* 骨架屏加载占位 */
+.skeleton-grid {
+  display: grid;
+  gap: 10px;
+  padding: 8px 0;
+}
+
+.skeleton-line {
+  height: 18px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #ece2d0 25%, #f4efe6 50%, #ece2d0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+/* 条形图 */
+.stats-bar-chart {
+  margin-top: 12px;
+}
+
+.stats-bar-chart h3 {
+  margin: 0 0 8px;
+}
+
+.stats-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.stats-bar-label {
+  min-width: 48px;
+  font-size: 13px;
+  text-align: right;
+  flex-shrink: 0;
+  color: #5e5e5e;
+}
+
+.stats-bar-track {
+  flex: 1;
+  height: 22px;
+  background: #f0ebe2;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.stats-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 600ms ease;
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  font-size: 12px;
+  color: #fff;
+  font-weight: 600;
+  min-width: fit-content;
+}
+
+.stats-bar-fill.green {
+  background: #18794e;
+}
+
+.stats-bar-fill.blue {
+  background: #2563eb;
+}
+
+.stats-bar-fill.orange {
+  background: #d97706;
+}
+
+.stats-bar-fill.red {
+  background: #b42318;
+}

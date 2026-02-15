@@ -1,0 +1,161 @@
+/* === 单张扑克牌样式 === */
+.playing-card {
+  position: relative;
+  width: 52px;
+  height: 72px;
+  border-radius: 6px;
+  background: #fff;
+  border: 1.5px solid #d4c9b8;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  color: #1a1a1a;
+  font-family: 'Georgia', 'STKaiti', serif;
+  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.playing-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.playing-card:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 红色花色（红桃、方块） */
+.playing-card.red {
+  color: #b42318;
+}
+
+/* 选中状态：向上弹起 + 高亮 */
+.playing-card.selected {
+  transform: translateY(-8px);
+  border-color: #0d3b47;
+  box-shadow: 0 8px 20px rgba(13, 59, 71, 0.3);
+  background: #f0f7ff;
+  animation: card-pop 250ms ease;
+}
+
+/* 万能牌（逢人配）：金色边框 + 渐变背景 */
+.playing-card.wild {
+  border-color: #d97706;
+  background: linear-gradient(145deg, #fffbeb, #fef3c7);
+}
+
+.playing-card.wild.selected {
+  border-color: #b45309;
+  box-shadow: 0 8px 20px rgba(217, 119, 6, 0.35);
+  background: linear-gradient(145deg, #fef9e7, #fde68a);
+}
+
+/* 大小王：深色渐变 + 金色文字 */
+.playing-card.joker {
+  background: linear-gradient(145deg, #1e293b, #334155);
+  color: #fbbf24;
+  border-color: #475569;
+}
+
+.playing-card.joker.selected {
+  border-color: #fbbf24;
+  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.35);
+  background: linear-gradient(145deg, #0f172a, #1e293b);
+}
+
+/* 左上角：点数 + 花色 */
+.card-tl,
+.card-br {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.card-tl {
+  top: 3px;
+  left: 4px;
+}
+
+/* 右下角：倒转的点数 + 花色 */
+.card-br {
+  bottom: 3px;
+  right: 4px;
+  transform: rotate(180deg);
+}
+
+.card-suit-small {
+  font-size: 10px;
+  margin-top: 1px;
+}
+
+/* 中间大花色符号 */
+.card-center {
+  font-size: 20px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.playing-card.joker .card-center {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* === 响应式：手机缩小牌面 === */
+@media (max-width: 640px) {
+  .playing-card {
+    width: 44px;
+    height: 62px;
+  }
+
+  .card-tl,
+  .card-br {
+    font-size: 10px;
+  }
+
+  .card-suit-small {
+    font-size: 9px;
+  }
+
+  .card-center {
+    font-size: 17px;
+  }
+
+  .playing-card.joker .card-center {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 380px) {
+  .playing-card {
+    width: 40px;
+    height: 56px;
+  }
+
+  .card-tl,
+  .card-br {
+    font-size: 9px;
+  }
+
+  .card-suit-small {
+    font-size: 8px;
+  }
+
+  .card-center {
+    font-size: 15px;
+  }
+
+  .playing-card.joker .card-center {
+    font-size: 10px;
+  }
+}
