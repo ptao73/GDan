@@ -38,54 +38,58 @@ export default function CardMatrix({
   return (
     <div className="matrix-board">
       <div className="card-matrix-grid">
-        <span className="matrix-corner" />
-        {RANKS.map((rank) => (
-          <span
-            key={`head-${rank}`}
-            className={`matrix-rank-head ${rank === trumpRank ? 'trump' : ''}`}
-          >
-            {rank}
-          </span>
-        ))}
-
-        {SUIT_ROWS.map((suit) => (
-          <div key={suit.key} className="matrix-row">
-            <span className={`matrix-suit-head ${suit.isRed ? 'red' : ''}`}>
-              {suit.label}
+        <div className="matrix-head-row">
+          <span className="matrix-corner" />
+          {RANKS.map((rank) => (
+            <span
+              key={`head-${rank}`}
+              className={`matrix-rank-head ${rank === trumpRank ? 'trump' : ''}`}
+            >
+              {rank}
             </span>
-            {RANKS.map((rank) => {
-              const key = `${suit.key}-${rank}`;
-              const cardsInCell = matrix[key] || [];
-              const isTrumpColumn = rank === trumpRank;
-              const isWildColumn = suit.key === 'H' && rank === trumpRank;
+          ))}
+        </div>
 
-              return (
-                <div
-                  key={key}
-                  className={`matrix-card-cell ${isTrumpColumn ? 'trump-col' : ''} ${
-                    isWildColumn ? 'wild-col' : ''
-                  } ${cardsInCell.length === 0 ? 'empty' : ''}`}
-                >
-                  {cardsInCell.length === 0 ? (
-                    <span className="matrix-empty-slot" />
-                  ) : (
-                    <div className={`matrix-stack ${cardsInCell.length > 1 ? 'has-pair' : ''}`}>
-                      {cardsInCell.map((card) => (
-                        <PlayingCard
-                          key={card.id}
-                          card={card}
-                          isSelected={selectedIds.includes(card.id)}
-                          onClick={() => toggleCard(card.id)}
-                          disabled={isSolving}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        ))}
+        <div className="matrix-body">
+          {SUIT_ROWS.map((suit, rowIndex) => (
+            <div key={suit.key} className={`matrix-row matrix-row-${rowIndex}`}>
+              <span className={`matrix-suit-head ${suit.isRed ? 'red' : ''}`}>
+                {suit.label}
+              </span>
+              {RANKS.map((rank) => {
+                const key = `${suit.key}-${rank}`;
+                const cardsInCell = matrix[key] || [];
+                const isTrumpColumn = rank === trumpRank;
+                const isWildColumn = suit.key === 'H' && rank === trumpRank;
+
+                return (
+                  <div
+                    key={key}
+                    className={`matrix-card-cell ${isTrumpColumn ? 'trump-col' : ''} ${
+                      isWildColumn ? 'wild-col' : ''
+                    } ${cardsInCell.length === 0 ? 'empty' : ''}`}
+                  >
+                    {cardsInCell.length === 0 ? (
+                      <span className="matrix-empty-slot" />
+                    ) : (
+                      <div className={`matrix-stack ${cardsInCell.length > 1 ? 'has-pair' : ''}`}>
+                        {cardsInCell.map((card) => (
+                          <PlayingCard
+                            key={card.id}
+                            card={card}
+                            isSelected={selectedIds.includes(card.id)}
+                            onClick={() => toggleCard(card.id)}
+                            disabled={isSolving}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="matrix-joker-row">
