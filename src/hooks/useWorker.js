@@ -41,21 +41,25 @@ export function useWorker() {
     };
   }, []);
 
-  function runAiSearchWithWorker(cards, trumpRank) {
+  function runAiSearchWithWorker(cards, trumpRank, options = {}) {
     const worker = workerRef.current;
     if (!worker) {
       return Promise.reject(new Error('Worker unavailable'));
     }
+
+    const timeLimitMs = options.timeLimitMs ?? 3000;
+    const maxBranch = options.maxBranch;
+    const watchdogMs = Math.max(3600, timeLimitMs + 900);
 
     return new Promise((resolve, reject) => {
       const requestId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
       const timer = window.setTimeout(() => {
         pendingRef.current.delete(requestId);
         reject(new Error('AI worker timeout'));
-      }, 3600);
+      }, watchdogMs);
 
       pendingRef.current.set(requestId, { resolve, reject, timer });
-      worker.postMessage({ requestId, cards, trumpRank, timeLimitMs: 3000 });
+      worker.postMessage({ requestId, cards, trumpRank, timeLimitMs, maxBranch });
     });
   }
 

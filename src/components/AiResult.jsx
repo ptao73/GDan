@@ -47,7 +47,8 @@ export default function AiResult({
   aiStatus,
   userScore,
   aiScoreView,
-  userComboKeySet
+  userComboKeySet,
+  aiHasRecommendation
 }) {
   return (
     <article className="panel">
@@ -55,39 +56,58 @@ export default function AiResult({
       {aiStatus === 'running' ? <SolvingIndicator /> : null}
       {aiResult ? (
         <>
-          <p>
-            {aiResult.timedOut ? 'AI较优方案' : 'AI最优方案'}：<strong>{aiResult.score}</strong>
-          </p>
-          <p>
-            计算耗时：{aiResult.elapsedMs}ms
-            {aiResult.timedOut ? '（超时降级，返回当前最佳方案）' : ''}
-          </p>
-          <p className="diff-legend">
-            <span className="tag removed">红色：AI拆开了你的组合</span>
-            <span className="tag added">绿色：AI新整合出的组合</span>
-            <span className="tag same">灰色：双方一致</span>
-          </p>
-          <p className="hint">{differenceHint(userScore, aiScoreView)}</p>
-          <ul className="combo-list ai-list">
-            {aiResult.combos.map((combo, index) => {
-              const key = comboKey(combo);
-              const compareClass = userComboKeySet.has(key) ? 'same' : 'added';
-              return (
-                <li key={`${key}-${index}`} className={compareClass}>
-                  <span>{comboText(combo)}</span>
-                </li>
-              );
-            })}
-          </ul>
-          {aiScoreView ? (
-            <div className="score-grid compact">
-              <p>AI牌型分：{aiScoreView.detail.shapeScore}</p>
-              <p>AI火力分：{aiScoreView.detail.burstScore}</p>
-              <p>AI关键牌分：{aiScoreView.detail.keyScore}</p>
-              <p>AI轮次修正：{aiScoreView.detail.roundScore}</p>
-              <p>AI总手数：{aiScoreView.detail.handCount}</p>
-            </div>
-          ) : null}
+          {aiHasRecommendation ? (
+            <>
+              <p>
+                {aiResult.timedOut ? 'AI较优方案' : 'AI最优方案'}：<strong>{aiResult.score}</strong>
+              </p>
+              <p>
+                计算耗时：{aiResult.elapsedMs}ms
+                {aiResult.timedOut ? '（超时降级，返回当前最佳方案）' : ''}
+              </p>
+              <p>搜索档位：{aiResult.searchModeLabel || '均衡'}</p>
+              <p className="diff-legend">
+                <span className="tag removed">红色：AI拆开了你的组合</span>
+                <span className="tag added">绿色：AI新整合出的组合</span>
+                <span className="tag same">灰色：双方一致</span>
+              </p>
+              <p className="hint">{differenceHint(userScore, aiScoreView)}</p>
+              <ul className="combo-list ai-list">
+                {aiResult.combos.map((combo, index) => {
+                  const key = comboKey(combo);
+                  const compareClass = userComboKeySet.has(key) ? 'same' : 'added';
+                  return (
+                    <li key={`${key}-${index}`} className={compareClass}>
+                      <span>{comboText(combo)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              {aiScoreView ? (
+                <div className="score-grid compact">
+                  <p>AI牌型分：{aiScoreView.detail.shapeScore}</p>
+                  <p>AI火力分：{aiScoreView.detail.burstScore}</p>
+                  <p>AI关键牌分：{aiScoreView.detail.keyScore}</p>
+                  <p>AI轮次修正：{aiScoreView.detail.roundScore}</p>
+                  <p>AI总手数：{aiScoreView.detail.handCount}</p>
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <>
+              <p>
+                未找到高于玩家方案的 AI 推荐（当前最高：<strong>{aiResult.score}</strong>）
+              </p>
+              <p>
+                搜索轮次：{aiResult.searchAttempts || 1}
+                {aiResult.timedOut ? '（包含超时降级结果）' : ''}
+              </p>
+              <p>搜索档位：{aiResult.searchModeLabel || '均衡'}</p>
+              <p className="hint">
+                当前不会给出“AI推荐方案”，因为结果未超过你的得分。你可能已经接近最优。
+              </p>
+            </>
+          )}
         </>
       ) : (
         <p className="hint">提交评分后展示 AI 对照和差异解释。</p>

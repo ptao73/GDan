@@ -23,6 +23,9 @@ export default function App() {
         importHistory={g.importHistory}
         importInputRef={g.importInputRef}
         isSolving={g.isSolving}
+        aiSearchMode={g.aiSearchMode}
+        aiSearchModeOptions={g.aiSearchModeOptions}
+        setAiSearchMode={g.setAiSearchMode}
       />
 
       <StatusBar
@@ -31,6 +34,7 @@ export default function App() {
         remainingCount={g.remainingCards.length}
         jokersRemain={g.jokersRemain}
         wildcardRemain={g.wildcardRemain}
+        aiSearchModeLabel={g.aiSearchModeLabel}
       />
 
       {/* Toast 通知：右下角浮动，key 驱动动画重播 */}
@@ -67,6 +71,7 @@ export default function App() {
             userCombos={g.userCombos}
             aiResult={g.aiResult}
             aiComboKeySet={g.aiComboKeySet}
+            aiHasRecommendation={g.aiHasRecommendation}
             removeGroup={g.removeGroup}
             isSolving={g.isSolving}
           />
@@ -89,6 +94,7 @@ export default function App() {
           userScore={g.userScore}
           aiScoreView={g.aiScoreView}
           userComboKeySet={g.userComboKeySet}
+          aiHasRecommendation={g.aiHasRecommendation}
         />
       </section>
 
@@ -102,6 +108,7 @@ export default function App() {
         canAnalyze={g.canAnalyze}
         isSolving={g.isSolving}
         submitScoring={g.submitScoring}
+        aiSearchModeLabel={g.aiSearchModeLabel}
       />
     </main>
   );

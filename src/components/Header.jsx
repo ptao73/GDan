@@ -4,7 +4,10 @@ export default function Header({
   openImportDialog,
   importHistory,
   importInputRef,
-  isSolving
+  isSolving,
+  aiSearchMode,
+  aiSearchModeOptions,
+  setAiSearchMode
 }) {
   return (
     <header className="hero">
@@ -22,6 +25,20 @@ export default function Header({
         <button className="ghost" onClick={openImportDialog} disabled={isSolving}>
           导入JSON
         </button>
+        <label className="mode-selector">
+          <span>AI搜索档位</span>
+          <select
+            value={aiSearchMode}
+            onChange={(event) => setAiSearchMode(event.target.value)}
+            disabled={isSolving}
+          >
+            {aiSearchModeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <input
           ref={importInputRef}
           className="hidden-input"

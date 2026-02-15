@@ -19,6 +19,7 @@ export default function ComboList({
   userCombos,
   aiResult,
   aiComboKeySet,
+  aiHasRecommendation,
   removeGroup,
   isSolving
 }) {
@@ -26,7 +27,7 @@ export default function ComboList({
     <ul className="combo-list">
       {userCombos.map((combo, index) => {
         const key = comboKey(combo);
-        const compareClass = aiResult
+        const compareClass = aiResult && aiHasRecommendation
           ? aiComboKeySet.has(key)
             ? 'same'
             : 'removed'

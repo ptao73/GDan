@@ -1,17 +1,21 @@
 :root {
-  --bg: #f4efe6;
-  --bg-soft: #ece2d0;
-  --ink: #1b1b1b;
-  --primary: #0d3b47;
-  --primary-soft: #1d6071;
-  --accent: #c44536;
-  --accent-soft: #e08f6a;
-  --ok: #18794e;
-  --warn: #9a6700;
-  --card: #fffaf1;
-  --line: #d7c8b0;
-  --muted: #5e5e5e;
-  --shadow: 0 14px 36px rgba(13, 59, 71, 0.17);
+  --bg-canvas: #f7f2e8;
+  --bg-canvas-deep: #e9dfce;
+  --bg-paper: #fdf9f1;
+  --ink-main: #2c2419;
+  --ink-soft: #625747;
+  --brand: #2f5f7b;
+  --brand-soft: #4f87a8;
+  --brand-deep: #17384c;
+  --line: #d6c7af;
+  --line-strong: #bba889;
+  --accent: #c2482f;
+  --accent-soft: #f8ddd6;
+  --success: #216d48;
+  --warning: #9f6826;
+  --danger: #b5302b;
+  --shadow-soft: 0 8px 24px rgba(42, 31, 19, 0.1);
+  --shadow-panel: 0 16px 32px rgba(47, 36, 22, 0.14);
 }
 
 * {
@@ -21,12 +25,20 @@
 body {
   margin: 0;
   min-height: 100vh;
-  color: var(--ink);
+  color: var(--ink-main);
+  font-family: 'STKaiti', 'Kaiti SC', 'Songti SC', 'Noto Serif SC', serif;
   background:
-    radial-gradient(circle at 15% 20%, rgba(224, 143, 106, 0.24), transparent 30%),
-    radial-gradient(circle at 85% 10%, rgba(13, 59, 71, 0.24), transparent 35%),
-    linear-gradient(165deg, #f7f1e4 0%, #f0e6d3 45%, #e8dcc5 100%);
-  font-family: 'STKaiti', 'KaiTi', 'Baskerville', serif;
+    radial-gradient(circle at 7% 9%, rgba(194, 72, 47, 0.16), transparent 30%),
+    radial-gradient(circle at 90% 12%, rgba(47, 95, 123, 0.18), transparent 33%),
+    radial-gradient(circle at 22% 86%, rgba(88, 126, 93, 0.12), transparent 28%),
+    repeating-linear-gradient(
+      -30deg,
+      rgba(255, 255, 255, 0.18) 0,
+      rgba(255, 255, 255, 0.18) 1px,
+      transparent 1px,
+      transparent 14px
+    ),
+    linear-gradient(160deg, var(--bg-canvas) 0%, #f1e7d6 52%, var(--bg-canvas-deep) 100%);
 }
 
 button,

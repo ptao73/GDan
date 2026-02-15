@@ -1,11 +1,12 @@
 import { solveBestScheme } from '../engine/solver.js';
 
 self.onmessage = (event) => {
-  const { requestId, cards, trumpRank, timeLimitMs } = event.data || {};
+  const { requestId, cards, trumpRank, timeLimitMs, maxBranch } = event.data || {};
 
   try {
     const result = solveBestScheme(cards || [], trumpRank, {
-      timeLimitMs: typeof timeLimitMs === 'number' ? timeLimitMs : 3000
+      timeLimitMs: typeof timeLimitMs === 'number' ? timeLimitMs : 3000,
+      maxBranch: typeof maxBranch === 'number' ? maxBranch : undefined
     });
 
     self.postMessage({ requestId, result });

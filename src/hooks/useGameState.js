@@ -11,6 +11,48 @@ import { DataService } from '../services/dataService.js';
 import { useWorker } from './useWorker.js';
 
 const MATRIX_RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+const AI_MODE_STORAGE_KEY = 'guandan-ai-search-mode';
+const AI_SEARCH_MODE_OPTIONS = [
+  {
+    value: 'fast',
+    label: '速度优先',
+    description: '更快返回结果，适合频繁训练'
+  },
+  {
+    value: 'balanced',
+    label: '均衡',
+    description: '速度与质量折中（推荐）'
+  },
+  {
+    value: 'quality',
+    label: '质量优先',
+    description: '更深搜索，耗时更长'
+  }
+];
+const AI_MODE_LABEL_MAP = Object.fromEntries(
+  AI_SEARCH_MODE_OPTIONS.map((item) => [item.value, item.label])
+);
+const AI_SEARCH_PROFILES_BY_MODE = {
+  fast: [
+    { mode: 'worker', timeLimitMs: 1800, maxBranch: 18 },
+    { mode: 'worker', timeLimitMs: 2600, maxBranch: 22 },
+    { mode: 'local', timeLimitMs: 3200, maxBranch: 24 }
+  ],
+  balanced: [
+    { mode: 'worker', timeLimitMs: 3000, maxBranch: 24 },
+    { mode: 'worker', timeLimitMs: 4500, maxBranch: 30 },
+    { mode: 'worker', timeLimitMs: 6000, maxBranch: 36 },
+    { mode: 'local', timeLimitMs: 6500, maxBranch: 34 },
+    { mode: 'local', timeLimitMs: 9000, maxBranch: 44 }
+  ],
+  quality: [
+    { mode: 'worker', timeLimitMs: 4500, maxBranch: 30 },
+    { mode: 'worker', timeLimitMs: 7000, maxBranch: 38 },
+    { mode: 'worker', timeLimitMs: 9500, maxBranch: 46 },
+    { mode: 'local', timeLimitMs: 10000, maxBranch: 44 },
+    { mode: 'local', timeLimitMs: 13000, maxBranch: 52 }
+  ]
+};
 
 /**
  * 游戏核心状态管理 Hook
@@ -27,6 +69,7 @@ export function useGameState() {
   const [userScore, setUserScore] = useState(null);
   const [aiResult, setAiResult] = useState(null);
   const [aiStatus, setAiStatus] = useState('idle');
+  const [aiSearchMode, setAiSearchMode] = useState('balanced');
 
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
@@ -112,6 +155,10 @@ export function useGameState() {
   const aiScoreView = aiResult
     ? { total: aiResult.score, detail: aiResult.detail }
     : null;
+  const aiHasRecommendation = Boolean(
+    aiResult && userScore && aiResult.score > userScore.total
+  );
+  const aiSearchModeLabel = AI_MODE_LABEL_MAP[aiSearchMode] || AI_MODE_LABEL_MAP.balanced;
 
   // --- 副作用 ---
   useEffect(() => {
@@ -123,6 +170,25 @@ export function useGameState() {
     const timer = window.setTimeout(() => setNotice(''), 5000);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    try {
+      const saved = window.localStorage.getItem(AI_MODE_STORAGE_KEY);
+      if (saved && AI_SEARCH_PROFILES_BY_MODE[saved]) {
+        setAiSearchMode(saved);
+      }
+    } catch (error) {
+      // Ignore storage failures in privacy-restricted environments.
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(AI_MODE_STORAGE_KEY, aiSearchMode);
+    } catch (error) {
+      // Ignore storage failures in privacy-restricted environments.
+    }
+  }, [aiSearchMode]);
 
   // --- 操作方法 ---
   async function refreshHistoryAndStats() {
@@ -216,6 +282,77 @@ export function useGameState() {
     setSelectedIds([]);
   }
 
+  function handleChangeAiSearchMode(nextMode) {
+    if (isSolving) {
+      setNotice('AI 正在计算中，暂不可切换搜索档位。');
+      return;
+    }
+    if (!AI_SEARCH_PROFILES_BY_MODE[nextMode]) {
+      return;
+    }
+    setAiSearchMode(nextMode);
+    setNotice(`已切换 AI 搜索档位：${AI_MODE_LABEL_MAP[nextMode]}`);
+  }
+
+  async function findAiRecommendation(targetScore, profiles, modeKey) {
+    let bestResult = null;
+    let usedFallback = false;
+    let attemptCount = 0;
+
+    for (const profile of profiles) {
+      attemptCount += 1;
+
+      let result = null;
+      if (profile.mode === 'worker') {
+        try {
+          result = await runAiSearchWithWorker(dealtCards, trumpRank, {
+            timeLimitMs: profile.timeLimitMs,
+            maxBranch: profile.maxBranch
+          });
+        } catch (error) {
+          usedFallback = true;
+          result = solveBestScheme(dealtCards, trumpRank, {
+            timeLimitMs: Math.max(2200, profile.timeLimitMs - 400),
+            maxBranch: profile.maxBranch
+          });
+        }
+      } else {
+        result = solveBestScheme(dealtCards, trumpRank, {
+          timeLimitMs: profile.timeLimitMs,
+          maxBranch: profile.maxBranch
+        });
+      }
+
+      if (!bestResult || result.score > bestResult.score) {
+        bestResult = result;
+      }
+
+      if (result.score > targetScore) {
+        return {
+          ai: {
+            ...result,
+            searchAttempts: attemptCount,
+            surpassedUser: true,
+            searchMode: modeKey,
+            searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced
+          },
+          usedFallback
+        };
+      }
+    }
+
+    return {
+      ai: {
+        ...(bestResult || solveBestScheme(dealtCards, trumpRank, { timeLimitMs: 3000 })),
+        searchAttempts: attemptCount,
+        surpassedUser: false,
+        searchMode: modeKey,
+        searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced
+      },
+      usedFallback
+    };
+  }
+
   async function submitScoring() {
     if (isSolving) {
       setNotice('专家正在计算中，请勿重复提交。');
@@ -231,16 +368,15 @@ export function useGameState() {
     setUserScore(userScoreResult);
     setAiStatus('running');
 
-    let ai;
-    let usedFallback = false;
-
-    try {
-      ai = await runAiSearchWithWorker(dealtCards, trumpRank);
-    } catch (error) {
-      usedFallback = true;
-      ai = solveBestScheme(dealtCards, trumpRank, { timeLimitMs: 2600 });
-    }
-
+    const modeKey = aiSearchMode;
+    const profiles =
+      AI_SEARCH_PROFILES_BY_MODE[modeKey] || AI_SEARCH_PROFILES_BY_MODE.balanced;
+    const modeLabel = AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced;
+    const { ai, usedFallback } = await findAiRecommendation(
+      userScoreResult.total,
+      profiles,
+      modeKey
+    );
     setAiResult(ai);
     setAiStatus('done');
 
@@ -255,17 +391,25 @@ export function useGameState() {
       aiCombos: ai.combos,
       aiScore: ai.score,
       aiScoreDetail: ai.detail,
-      isOptimal: userScoreResult.total === ai.score
+      aiSearchMode: modeKey,
+      hasAiRecommendation: ai.score > userScoreResult.total,
+      isOptimal: ai.score <= userScoreResult.total
     };
 
     try {
       await DataService.saveGame(gameRecord);
       await refreshHistoryAndStats();
-      setNotice(
-        usedFallback
-          ? 'AI Worker 异常，已使用主线程降级计算并保存本局。'
-          : '本局已保存。'
-      );
+      if (ai.score > userScoreResult.total) {
+        setNotice(
+          usedFallback
+            ? `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮，含降级计算）并保存本局。`
+            : `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮）并保存本局。`
+        );
+      } else {
+        setNotice(
+          `已执行${modeLabel}多轮搜索，仍未找到高于玩家得分的方案；你的方案可能已接近最优。`
+        );
+      }
     } catch (error) {
       setNotice('本局评分完成，但保存历史失败。');
     }
@@ -336,12 +480,17 @@ export function useGameState() {
     jokersRemain,
     wildcardRemain,
     aiScoreView,
+    aiHasRecommendation,
+    aiSearchMode,
+    aiSearchModeLabel,
+    aiSearchModeOptions: AI_SEARCH_MODE_OPTIONS,
     startNewDeal,
     toggleCard,
     removeGroup,
     confirmGroup,
     resetSelection,
     submitScoring,
+    setAiSearchMode: handleChangeAiSearchMode,
     exportHistory,
     openImportDialog,
     importHistory,

@@ -1,85 +1,80 @@
-/* === 单张扑克牌样式 === */
 .playing-card {
   position: relative;
-  width: 52px;
-  height: 72px;
-  border-radius: 6px;
-  background: #fff;
-  border: 1.5px solid #d4c9b8;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+  width: 54px;
+  height: 76px;
+  border-radius: 8px;
+  border: 1.5px solid #d4c6b2;
+  background: linear-gradient(165deg, #ffffff, #f6f3ed);
+  box-shadow: 0 3px 8px rgba(45, 34, 23, 0.16);
+  color: #222018;
   cursor: pointer;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  color: #1a1a1a;
-  font-family: 'Georgia', 'STKaiti', serif;
-  transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
-  flex-shrink: 0;
+  font-family: 'Georgia', 'Songti SC', serif;
   user-select: none;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
 }
 
 .playing-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  background: #fff;
-  color: #1a1a1a;
-  border-color: #c4b9a8;
+  border-color: #b9a68c;
+  background: linear-gradient(165deg, #ffffff, #faf5ec);
+  box-shadow: 0 8px 14px rgba(46, 35, 23, 0.18);
 }
 
 .playing-card:disabled,
 .playing-card:disabled:hover {
-  opacity: 0.56;
+  opacity: 0.58;
   cursor: not-allowed;
-  transform: none !important;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
-  background: #fff;
-  color: #1a1a1a;
-  border-color: #d4c9b8;
+  transform: none;
+  border-color: #d4c6b2;
+  background: linear-gradient(165deg, #ffffff, #f6f3ed);
+  box-shadow: 0 3px 8px rgba(45, 34, 23, 0.16);
 }
 
-/* 红色花色（红桃、方块） */
 .playing-card.red,
 .playing-card.red:hover,
 .playing-card.red:disabled {
-  color: #b42318;
+  color: #b82f26;
 }
 
-/* 选中状态：向上弹起 + 高亮 */
 .playing-card.selected {
-  transform: translateY(-8px);
-  border-color: #0d3b47;
-  box-shadow: 0 8px 20px rgba(13, 59, 71, 0.3);
-  background: #f0f7ff;
+  transform: translateY(-9px);
+  border-color: #2f5f7b;
+  background: linear-gradient(165deg, #fbfdff, #e9f3ff);
+  box-shadow: 0 10px 22px rgba(23, 56, 76, 0.32);
   animation: card-pop 250ms ease;
 }
 
-/* 万能牌（逢人配）：金色边框 + 渐变背景 */
 .playing-card.wild {
-  border-color: #d97706;
-  background: linear-gradient(145deg, #fffbeb, #fef3c7);
+  border-color: #cc6a12;
+  background: linear-gradient(160deg, #fffcea, #ffe8bc);
 }
 
 .playing-card.wild.selected {
-  border-color: #b45309;
-  box-shadow: 0 8px 20px rgba(217, 119, 6, 0.35);
-  background: linear-gradient(145deg, #fef9e7, #fde68a);
+  border-color: #ae570c;
+  box-shadow: 0 10px 22px rgba(204, 106, 18, 0.32);
+  background: linear-gradient(160deg, #fff8db, #ffd88c);
 }
 
-/* 大小王：深色渐变 + 金色文字 */
 .playing-card.joker {
-  background: linear-gradient(145deg, #1e293b, #334155);
-  color: #fbbf24;
-  border-color: #475569;
+  color: #f4c44f;
+  border-color: #3f5268;
+  background: linear-gradient(160deg, #213246, #3d5067);
 }
 
 .playing-card.joker.selected {
-  border-color: #fbbf24;
-  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.35);
-  background: linear-gradient(145deg, #0f172a, #1e293b);
+  border-color: #f4c44f;
+  box-shadow: 0 10px 24px rgba(51, 67, 89, 0.4);
+  background: linear-gradient(160deg, #172638, #2f4258);
 }
 
-/* 左上角：点数 + 花色 */
 .card-tl,
 .card-br {
   position: absolute;
@@ -96,7 +91,6 @@
   left: 4px;
 }
 
-/* 右下角：倒转的点数 + 花色 */
 .card-br {
   bottom: 3px;
   right: 4px;
@@ -108,10 +102,8 @@
   margin-top: 1px;
 }
 
-/* 中间大花色符号 */
 .card-center {
-  font-size: 20px;
-  font-weight: 400;
+  font-size: 21px;
   line-height: 1;
 }
 
@@ -120,11 +112,11 @@
   font-weight: 700;
 }
 
-/* === 响应式：手机缩小牌面 === */
 @media (max-width: 640px) {
   .playing-card {
-    width: 44px;
-    height: 62px;
+    width: 45px;
+    height: 64px;
+    border-radius: 7px;
   }
 
   .card-tl,
@@ -145,10 +137,10 @@
   }
 }
 
-@media (max-width: 380px) {
+@media (max-width: 390px) {
   .playing-card {
     width: 40px;
-    height: 56px;
+    height: 57px;
   }
 
   .card-tl,

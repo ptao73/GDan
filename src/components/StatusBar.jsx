@@ -3,7 +3,8 @@ export default function StatusBar({
   assignedCardsCount,
   remainingCount,
   jokersRemain,
-  wildcardRemain
+  wildcardRemain,
+  aiSearchModeLabel
 }) {
   return (
     <section className="status-bar">
@@ -18,6 +19,9 @@ export default function StatusBar({
       </span>
       <span>
         剩余牌：<strong>{remainingCount}</strong>（王 {jokersRemain}，逢人配 {wildcardRemain}）
+      </span>
+      <span>
+        AI档位：<strong>{aiSearchModeLabel}</strong>
       </span>
     </section>
   );

@@ -1,6 +1,3 @@
-/* === 统计面板专属样式 === */
-
-/* 骨架屏加载占位 */
 .skeleton-grid {
   display: grid;
   gap: 10px;
@@ -10,16 +7,15 @@
 .skeleton-line {
   height: 18px;
   border-radius: 8px;
-  background: linear-gradient(90deg, #ece2d0 25%, #f4efe6 50%, #ece2d0 75%);
+  background: linear-gradient(90deg, #ebdfca 25%, #f7f1e5 50%, #ebdfca 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }
 
 .skeleton-line.short {
-  width: 60%;
+  width: 62%;
 }
 
-/* 条形图 */
 .stats-bar-chart {
   margin-top: 12px;
 }
@@ -36,46 +32,47 @@
 }
 
 .stats-bar-label {
-  min-width: 48px;
-  font-size: 13px;
-  text-align: right;
+  min-width: 50px;
   flex-shrink: 0;
-  color: #5e5e5e;
+  text-align: right;
+  font-size: 13px;
+  color: #665745;
 }
 
 .stats-bar-track {
   flex: 1;
   height: 22px;
-  background: #f0ebe2;
-  border-radius: 6px;
+  border-radius: 7px;
+  background: #f0e8da;
+  border: 1px solid rgba(192, 171, 141, 0.5);
   overflow: hidden;
 }
 
 .stats-bar-fill {
-  height: 100%;
-  border-radius: 6px;
-  transition: width 600ms ease;
   display: flex;
   align-items: center;
+  height: 100%;
+  min-width: fit-content;
+  border-radius: 7px;
   padding-left: 8px;
   font-size: 12px;
-  color: #fff;
   font-weight: 600;
-  min-width: fit-content;
+  color: #fff;
+  transition: width 560ms ease;
 }
 
 .stats-bar-fill.green {
-  background: #18794e;
+  background: #216d48;
 }
 
 .stats-bar-fill.blue {
-  background: #2563eb;
+  background: #2f5f7b;
 }
 
 .stats-bar-fill.orange {
-  background: #d97706;
+  background: #b8741f;
 }
 
 .stats-bar-fill.red {
-  background: #b42318;
+  background: #b5302b;
 }
