@@ -22,17 +22,26 @@
 .playing-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  background: #fff;
+  color: #1a1a1a;
+  border-color: #c4b9a8;
 }
 
-.playing-card:disabled {
+.playing-card:disabled,
+.playing-card:disabled:hover {
   opacity: 0.56;
   cursor: not-allowed;
   transform: none !important;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1) !important;
+  background: #fff;
+  color: #1a1a1a;
+  border-color: #d4c9b8;
 }
 
 /* 红色花色（红桃、方块） */
-.playing-card.red {
+.playing-card.red,
+.playing-card.red:hover,
+.playing-card.red:disabled {
   color: #b42318;
 }
 
