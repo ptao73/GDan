@@ -89,22 +89,24 @@ export default function CardMatrix({
       </div>
 
       <div className="matrix-joker-row">
-        <span className="matrix-suit-head">王</span>
-        {sortedJokers.length > 0 ? (
-          <div className="matrix-stack joker-stack">
-            {sortedJokers.map((card) => (
-              <PlayingCard
-                key={card.id}
-                card={card}
-                isSelected={selectedIds.includes(card.id)}
-                onClick={() => toggleCard(card.id)}
-                disabled={isSolving}
-              />
-            ))}
-          </div>
-        ) : (
-          <span className="matrix-empty-slot joker-empty" />
-        )}
+        <span className="joker-label">王</span>
+        <div className="joker-lane">
+          {sortedJokers.length > 0 ? (
+            <div className="matrix-stack joker-stack">
+              {sortedJokers.map((card) => (
+                <PlayingCard
+                  key={card.id}
+                  card={card}
+                  isSelected={selectedIds.includes(card.id)}
+                  onClick={() => toggleCard(card.id)}
+                  disabled={isSolving}
+                />
+              ))}
+            </div>
+          ) : (
+            <span className="matrix-empty-slot joker-empty" />
+          )}
+        </div>
       </div>
       <p className="hint">点选矩阵中的牌进行选择。级牌列高亮，♥级牌即逢人配。</p>
     </div>

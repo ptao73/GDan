@@ -223,9 +223,15 @@ button.ghost:hover {
   margin: 0;
   padding-bottom: 8px;
   border-bottom: 2px solid rgba(196, 177, 148, 0.74);
-  font-size: 34px;
+  font-size: 30px;
   line-height: 1;
   letter-spacing: 0.5px;
+}
+
+.cards-panel > h2,
+.combos-panel > h2 {
+  font-size: clamp(36px, 4.6vw, 52px);
+  letter-spacing: 2px;
 }
 
 .panel h3 {
@@ -251,12 +257,12 @@ button.ghost:hover {
 
 .matrix-board {
   position: relative;
-  margin: 12px 0 14px;
-  padding: 14px;
-  border-radius: 20px;
-  border: 2px solid rgba(191, 171, 141, 0.9);
+  margin: 14px 0 16px;
+  padding: 16px;
+  border-radius: 22px;
+  border: 2px solid rgba(191, 171, 141, 0.94);
   background:
-    linear-gradient(180deg, rgba(255, 252, 246, 0.9), rgba(247, 240, 226, 0.94)),
+    linear-gradient(180deg, rgba(255, 252, 246, 0.94), rgba(247, 240, 226, 0.97)),
     repeating-linear-gradient(
       0deg,
       rgba(121, 96, 67, 0.04) 0,
@@ -265,8 +271,8 @@ button.ghost:hover {
       transparent 15px
     );
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 10px 20px rgba(85, 65, 38, 0.12);
+    inset 0 1px 0 rgba(255, 255, 255, 0.76),
+    0 12px 26px rgba(85, 65, 38, 0.13);
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
@@ -274,10 +280,10 @@ button.ghost:hover {
 
 .card-matrix-grid {
   display: grid;
-  grid-template-columns: 68px repeat(13, minmax(74px, 1fr));
-  gap: 8px;
-  min-width: 1126px;
-  padding: 2px 1px 0;
+  grid-template-columns: 70px repeat(13, minmax(76px, 1fr));
+  gap: 7px;
+  min-width: 1160px;
+  padding: 2px 2px 0;
 }
 
 .matrix-row {
@@ -286,23 +292,24 @@ button.ghost:hover {
 
 .matrix-corner,
 .matrix-rank-head,
-.matrix-suit-head {
+.matrix-suit-head,
+.joker-label {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 14px;
+  border-radius: 13px;
   border: 1px solid rgba(191, 171, 141, 0.85);
   background: rgba(237, 228, 213, 0.9);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
 }
 
 .matrix-corner {
-  min-height: 46px;
+  min-height: 52px;
 }
 
 .matrix-rank-head {
-  min-height: 46px;
-  font-size: 17px;
+  min-height: 52px;
+  font-size: 20px;
   font-weight: 700;
   color: #5a452a;
   position: sticky;
@@ -311,14 +318,14 @@ button.ghost:hover {
 }
 
 .matrix-rank-head.trump {
-  border-color: rgba(204, 80, 60, 0.55);
+  border-color: rgba(204, 80, 60, 0.68);
   background: linear-gradient(120deg, #fff4f1, #ffe4dd);
   color: #ae2f21;
 }
 
 .matrix-suit-head {
-  min-height: 126px;
-  font-size: 28px;
+  min-height: 132px;
+  font-size: 30px;
   color: #2f261b;
 }
 
@@ -328,8 +335,8 @@ button.ghost:hover {
 
 .matrix-card-cell {
   position: relative;
-  min-height: 126px;
-  border-radius: 12px;
+  min-height: 132px;
+  border-radius: 11px;
   border: 1px dashed rgba(197, 180, 153, 0.86);
   background: rgba(255, 255, 255, 0.28);
   display: flex;
@@ -353,8 +360,8 @@ button.ghost:hover {
 }
 
 .matrix-empty-slot {
-  width: 60px;
-  height: 88px;
+  width: 62px;
+  height: 90px;
   border-radius: 10px;
   border: 2px dashed rgba(196, 176, 145, 0.7);
   background: rgba(255, 255, 255, 0.14);
@@ -362,22 +369,22 @@ button.ghost:hover {
 
 .matrix-stack {
   position: relative;
-  width: 64px;
-  min-height: 92px;
+  width: 66px;
+  min-height: 96px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .matrix-stack .playing-card {
-  width: 60px;
-  height: 86px;
+  width: 62px;
+  height: 88px;
 }
 
 .matrix-stack .playing-card:nth-child(2) {
   position: absolute;
-  top: 3px;
-  left: 4px;
+  top: 4px;
+  left: 5px;
   z-index: 2;
 }
 
@@ -410,30 +417,38 @@ button.ghost:hover {
 .matrix-joker-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin-top: 14px;
-  padding: 14px 2px 4px;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px 2px 2px;
   border-top: 2px dashed rgba(188, 168, 137, 0.85);
 }
 
-.matrix-joker-row .matrix-suit-head {
+.joker-label {
   width: 68px;
-  min-height: 64px;
-  font-size: 28px;
+  min-height: 52px;
+  font-size: 30px;
+  color: #433727;
   flex-shrink: 0;
 }
 
+.joker-lane {
+  flex: 1;
+  min-height: 96px;
+  display: flex;
+  align-items: center;
+}
+
 .joker-stack {
-  min-height: 92px;
+  min-height: 96px;
 }
 
 .joker-empty {
-  width: 60px;
-  height: 86px;
+  width: 62px;
+  height: 88px;
 }
 
 .matrix-board .hint {
-  margin-top: 12px;
+  margin-top: 14px;
   font-size: 16px;
   color: #5f503d;
 }
@@ -825,6 +840,12 @@ button.ghost:hover {
     font-size: 15px;
   }
 
+  .cards-panel > h2,
+  .combos-panel > h2 {
+    font-size: clamp(30px, 9vw, 42px);
+    letter-spacing: 1px;
+  }
+
   .status-bar {
     grid-template-columns: 1fr;
   }
@@ -834,19 +855,19 @@ button.ghost:hover {
   }
 
   .matrix-board {
-    padding: 12px;
+    padding: 11px;
     border-radius: 16px;
   }
 
   .card-matrix-grid {
-    grid-template-columns: 50px repeat(13, minmax(56px, 1fr));
-    min-width: 830px;
+    grid-template-columns: 52px repeat(13, minmax(58px, 1fr));
+    min-width: 860px;
     gap: 6px;
   }
 
   .matrix-corner,
   .matrix-rank-head {
-    min-height: 42px;
+    min-height: 44px;
   }
 
   .matrix-rank-head {
@@ -854,29 +875,29 @@ button.ghost:hover {
   }
 
   .matrix-suit-head {
-    min-height: 96px;
-    font-size: 23px;
+    min-height: 100px;
+    font-size: 24px;
     border-radius: 11px;
   }
 
   .matrix-card-cell {
-    min-height: 96px;
+    min-height: 100px;
     border-radius: 10px;
   }
 
   .matrix-empty-slot {
-    width: 45px;
-    height: 64px;
+    width: 46px;
+    height: 66px;
   }
 
   .matrix-stack {
-    width: 48px;
-    min-height: 70px;
+    width: 50px;
+    min-height: 72px;
   }
 
   .matrix-stack .playing-card {
-    width: 45px;
-    height: 64px;
+    width: 46px;
+    height: 66px;
   }
 
   .matrix-stack .playing-card:nth-child(2) {
@@ -884,15 +905,19 @@ button.ghost:hover {
     left: 3px;
   }
 
-  .matrix-joker-row .matrix-suit-head {
+  .joker-label {
     width: 50px;
-    min-height: 50px;
-    font-size: 22px;
+    min-height: 48px;
+    font-size: 23px;
+  }
+
+  .joker-lane {
+    min-height: 72px;
   }
 
   .joker-empty {
-    width: 45px;
-    height: 64px;
+    width: 46px;
+    height: 66px;
   }
 
   .matrix-card-cell .card-tl,
@@ -941,23 +966,29 @@ button.ghost:hover {
   }
 
   .card-matrix-grid {
-    grid-template-columns: 44px repeat(13, minmax(49px, 1fr));
-    min-width: 744px;
+    grid-template-columns: 44px repeat(13, minmax(50px, 1fr));
+    min-width: 760px;
   }
 
   .matrix-empty-slot {
-    width: 40px;
-    height: 57px;
+    width: 41px;
+    height: 58px;
   }
 
   .matrix-stack {
-    width: 43px;
-    min-height: 62px;
+    width: 44px;
+    min-height: 63px;
   }
 
   .matrix-stack .playing-card {
-    width: 40px;
-    height: 57px;
+    width: 41px;
+    height: 58px;
+  }
+
+  .joker-label {
+    width: 44px;
+    min-height: 44px;
+    font-size: 20px;
   }
 
   .matrix-card-cell .card-center,
