@@ -6,7 +6,7 @@ import {
   detectComboTypes
 } from '../engine/combos.js';
 import { scoreScheme } from '../engine/scoring.js';
-import { solveBestScheme } from '../engine/solver.js';
+import { compareSchemeResult, solveBestScheme } from '../engine/solver.js';
 import { DataService } from '../services/dataService.js';
 import { useWorker } from './useWorker.js';
 
@@ -79,6 +79,22 @@ function resolveAiProfiles(modeKey, iosOptimized) {
   }));
 }
 
+function buildDealKey(cards, trumpRank) {
+  if (!cards || cards.length === 0) {
+    return '';
+  }
+  return `${trumpRank}|${cards.map((card) => card.id).join('.')}`;
+}
+
+function isBetterResult(next, current) {
+  return compareSchemeResult(next, current) < 0;
+}
+
+function phaseOneSize(modeKey, profileCount) {
+  if (profileCount <= 1) return profileCount;
+  return modeKey === 'fast' ? 1 : Math.min(2, profileCount);
+}
+
 /**
  * 游戏核心状态管理 Hook
  * 包含所有状态变量、计算属性、和操作方法
@@ -103,7 +119,17 @@ export function useGameState() {
   const [notice, setNotice] = useState('');
 
   const importInputRef = useRef(null);
-  const { runAiSearchWithWorker } = useWorker();
+  const precomputeRef = useRef({
+    dealKey: '',
+    modeKey: '',
+    status: 'idle',
+    promise: null,
+    result: null,
+    usedFallback: false,
+    error: null
+  });
+
+  const { runAiSearchWithWorker, cancelPendingSearches } = useWorker();
 
   // --- 计算属性 ---
   const usedIdSet = useMemo(() => {
@@ -244,14 +270,244 @@ export function useGameState() {
     setAiStatus('idle');
   }
 
+  function resetPrecomputeState() {
+    precomputeRef.current = {
+      dealKey: '',
+      modeKey: '',
+      status: 'idle',
+      promise: null,
+      result: null,
+      usedFallback: false,
+      error: null
+    };
+  }
+
+  async function runSingleProfileSearch(cards, rank, profile, options = {}) {
+    const solverOptions = {
+      timeLimitMs: profile.timeLimitMs,
+      maxBranch: profile.maxBranch,
+      topK: 3,
+      targetScore: options.targetScore,
+      stopAfterSurpass: options.stopAfterSurpass
+    };
+
+    if (profile.mode === 'worker') {
+      try {
+        const result = await runAiSearchWithWorker(cards, rank, solverOptions);
+        return { result, usedFallback: false };
+      } catch (error) {
+        const message = error instanceof Error ? error.message : '';
+        if (
+          message.includes('cancelled') ||
+          message.includes('closed') ||
+          message.includes('取消') ||
+          message.includes('切换')
+        ) {
+          throw error;
+        }
+        const fallback = solveBestScheme(cards, rank, {
+          ...solverOptions,
+          timeLimitMs: Math.max(2200, profile.timeLimitMs - 400)
+        });
+        return { result: fallback, usedFallback: true };
+      }
+    }
+
+    return {
+      result: solveBestScheme(cards, rank, solverOptions),
+      usedFallback: false
+    };
+  }
+
+  async function runProfilesSearch({
+    cards,
+    rank,
+    profiles,
+    modeKey,
+    targetScore,
+    stopAfterSurpass,
+    initialBest,
+    initialAttempts
+  }) {
+    let bestResult = initialBest || null;
+    let usedFallback = false;
+    let attemptCount = initialAttempts || 0;
+    let surpassedTarget =
+      typeof targetScore === 'number' && bestResult
+        ? bestResult.score > targetScore
+        : false;
+
+    for (const profile of profiles) {
+      attemptCount += 1;
+      const { result, usedFallback: profileFallback } = await runSingleProfileSearch(
+        cards,
+        rank,
+        profile,
+        {
+          targetScore,
+          stopAfterSurpass
+        }
+      );
+
+      if (profileFallback) {
+        usedFallback = true;
+      }
+
+      if (!bestResult || isBetterResult(result, bestResult)) {
+        bestResult = result;
+      }
+
+      if (typeof targetScore === 'number' && result.score > targetScore) {
+        surpassedTarget = true;
+        if (stopAfterSurpass) {
+          break;
+        }
+      }
+    }
+
+    const resolvedBest =
+      bestResult ||
+      solveBestScheme(cards, rank, {
+        timeLimitMs: 3000,
+        topK: 3
+      });
+
+    return {
+      ai: {
+        ...resolvedBest,
+        searchAttempts: attemptCount,
+        surpassedUser:
+          typeof targetScore === 'number' ? resolvedBest.score > targetScore : false,
+        searchMode: modeKey,
+        searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced
+      },
+      usedFallback,
+      surpassedTarget
+    };
+  }
+
+  function kickOffPrecompute(cards, rank, modeKey, forceRestart = false) {
+    const dealKey = buildDealKey(cards, rank);
+    if (!dealKey) return;
+
+    const profiles = resolveAiProfiles(modeKey, iosOptimized);
+    if (profiles.length === 0) return;
+
+    const current = precomputeRef.current;
+    const sameTask =
+      current.dealKey === dealKey &&
+      current.modeKey === modeKey &&
+      (current.status === 'running' || current.status === 'ready');
+
+    if (!forceRestart && sameTask) {
+      return;
+    }
+
+    if (forceRestart) {
+      cancelPendingSearches('AI 预计算任务已切换。');
+    }
+
+    const task = runProfilesSearch({
+      cards,
+      rank,
+      profiles,
+      modeKey,
+      targetScore: null,
+      stopAfterSurpass: false,
+      initialBest: null,
+      initialAttempts: 0
+    });
+
+    precomputeRef.current = {
+      dealKey,
+      modeKey,
+      status: 'running',
+      promise: task,
+      result: null,
+      usedFallback: false,
+      error: null
+    };
+
+    task
+      .then((payload) => {
+        const latest = precomputeRef.current;
+        if (latest.promise !== task || latest.dealKey !== dealKey || latest.modeKey !== modeKey) {
+          return;
+        }
+
+        precomputeRef.current = {
+          dealKey,
+          modeKey,
+          status: 'ready',
+          promise: task,
+          result: payload.ai,
+          usedFallback: payload.usedFallback,
+          error: null
+        };
+      })
+      .catch((error) => {
+        const latest = precomputeRef.current;
+        if (latest.promise !== task || latest.dealKey !== dealKey || latest.modeKey !== modeKey) {
+          return;
+        }
+
+        precomputeRef.current = {
+          dealKey,
+          modeKey,
+          status: 'failed',
+          promise: null,
+          result: null,
+          usedFallback: false,
+          error
+        };
+      });
+  }
+
+  async function takePrecomputedResult(modeKey) {
+    const dealKey = buildDealKey(dealtCards, trumpRank);
+    const snapshot = precomputeRef.current;
+
+    if (snapshot.dealKey !== dealKey || snapshot.modeKey !== modeKey) {
+      return null;
+    }
+
+    if (snapshot.status === 'ready' && snapshot.result) {
+      return {
+        ai: snapshot.result,
+        usedFallback: snapshot.usedFallback,
+        fromPrecompute: true
+      };
+    }
+
+    if (snapshot.status === 'running' && snapshot.promise) {
+      try {
+        const payload = await snapshot.promise;
+        return {
+          ai: payload.ai,
+          usedFallback: payload.usedFallback,
+          fromPrecompute: true
+        };
+      } catch (error) {
+        return null;
+      }
+    }
+
+    return null;
+  }
+
   function startNewDeal() {
     if (isSolving) {
       setNotice('AI 计算中，请等待当前分析完成。');
       return;
     }
+
+    cancelPendingSearches('新牌局已开始，取消旧搜索。');
+    resetPrecomputeState();
+
     const deal = createDeal();
     resetRoundState(deal.dealtCards, deal.trumpRank);
-    setNotice(`新牌局已开始，当前打几：${deal.trumpRank}`);
+    kickOffPrecompute(deal.dealtCards, deal.trumpRank, aiSearchMode, true);
+    setNotice(`新牌局已开始，当前打几：${deal.trumpRank}。AI 已后台预计算。`);
   }
 
   useEffect(() => {
@@ -261,6 +517,17 @@ export function useGameState() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (dealtCards.length !== 27) return;
+    const dealKey = buildDealKey(dealtCards, trumpRank);
+    const shouldForceRestart =
+      precomputeRef.current.dealKey === dealKey &&
+      precomputeRef.current.modeKey &&
+      precomputeRef.current.modeKey !== aiSearchMode;
+    kickOffPrecompute(dealtCards, trumpRank, aiSearchMode, shouldForceRestart);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiSearchMode, iosOptimized, trumpRank, dealtCards]);
 
   function clearScoringResult() {
     setUserScore(null);
@@ -324,65 +591,71 @@ export function useGameState() {
       return;
     }
     setAiSearchMode(nextMode);
-    setNotice(`已切换 AI 搜索档位：${AI_MODE_LABEL_MAP[nextMode]}`);
+
+    if (dealtCards.length === 27) {
+      kickOffPrecompute(dealtCards, trumpRank, nextMode, true);
+    }
+
+    setNotice(`已切换 AI 搜索档位：${AI_MODE_LABEL_MAP[nextMode]}（后台将重算当前牌局）`);
   }
 
   async function findAiRecommendation(targetScore, profiles, modeKey) {
-    let bestResult = null;
-    let usedFallback = false;
-    let attemptCount = 0;
-
-    for (const profile of profiles) {
-      attemptCount += 1;
-
-      let result = null;
-      if (profile.mode === 'worker') {
-        try {
-          result = await runAiSearchWithWorker(dealtCards, trumpRank, {
-            timeLimitMs: profile.timeLimitMs,
-            maxBranch: profile.maxBranch
-          });
-        } catch (error) {
-          usedFallback = true;
-          result = solveBestScheme(dealtCards, trumpRank, {
-            timeLimitMs: Math.max(2200, profile.timeLimitMs - 400),
-            maxBranch: profile.maxBranch
-          });
-        }
-      } else {
-        result = solveBestScheme(dealtCards, trumpRank, {
-          timeLimitMs: profile.timeLimitMs,
-          maxBranch: profile.maxBranch
-        });
-      }
-
-      if (!bestResult || result.score > bestResult.score) {
-        bestResult = result;
-      }
-
-      if (result.score > targetScore) {
-        return {
-          ai: {
-            ...result,
-            searchAttempts: attemptCount,
-            surpassedUser: true,
-            searchMode: modeKey,
-            searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced
-          },
-          usedFallback
-        };
-      }
+    const cached = await takePrecomputedResult(modeKey);
+    if (cached?.ai) {
+      return {
+        ai: {
+          ...cached.ai,
+          surpassedUser: cached.ai.score > targetScore,
+          searchMode: modeKey,
+          searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced,
+          fromPrecompute: true
+        },
+        usedFallback: cached.usedFallback
+      };
     }
+
+    const firstPhaseCount = phaseOneSize(modeKey, profiles.length);
+    const phaseOneProfiles = profiles.slice(0, firstPhaseCount);
+    const phaseTwoProfiles = profiles.slice(firstPhaseCount);
+
+    const phaseOne = await runProfilesSearch({
+      cards: dealtCards,
+      rank: trumpRank,
+      profiles: phaseOneProfiles,
+      modeKey,
+      targetScore,
+      stopAfterSurpass: true,
+      initialBest: null,
+      initialAttempts: 0
+    });
+
+    if (phaseOne.surpassedTarget || phaseTwoProfiles.length === 0) {
+      return {
+        ai: {
+          ...phaseOne.ai,
+          fromPrecompute: false
+        },
+        usedFallback: phaseOne.usedFallback
+      };
+    }
+
+    const phaseTwo = await runProfilesSearch({
+      cards: dealtCards,
+      rank: trumpRank,
+      profiles: phaseTwoProfiles,
+      modeKey,
+      targetScore,
+      stopAfterSurpass: false,
+      initialBest: phaseOne.ai,
+      initialAttempts: phaseOne.ai.searchAttempts || 0
+    });
 
     return {
       ai: {
-        ...(bestResult || solveBestScheme(dealtCards, trumpRank, { timeLimitMs: 3000 })),
-        searchAttempts: attemptCount,
-        surpassedUser: false,
-        searchMode: modeKey,
-        searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced
+        ...phaseTwo.ai,
+        fromPrecompute: false
       },
-      usedFallback
+      usedFallback: phaseOne.usedFallback || phaseTwo.usedFallback
     };
   }
 
@@ -433,11 +706,19 @@ export function useGameState() {
         await DataService.saveGame(gameRecord);
         await refreshHistoryAndStats();
         if (ai.score > userScoreResult.total) {
-          setNotice(
-            usedFallback
-              ? `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮，含降级计算）并保存本局。`
-              : `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮）并保存本局。`
-          );
+          if (ai.fromPrecompute) {
+            setNotice(
+              `已使用后台预计算结果，找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮）并保存本局。`
+            );
+          } else {
+            setNotice(
+              usedFallback
+                ? `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮，含降级计算）并保存本局。`
+                : `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮）并保存本局。`
+            );
+          }
+        } else if (ai.fromPrecompute) {
+          setNotice(`已直接给出后台预计算结果（${modeLabel}），你的方案可能已接近最优。`);
         } else {
           setNotice(
             `已执行${modeLabel}多轮搜索，仍未找到高于玩家得分的方案；你的方案可能已接近最优。`

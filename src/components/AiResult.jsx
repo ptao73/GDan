@@ -42,6 +42,13 @@ function differenceHint(userScore, aiScore) {
   return `AI 总分高 ${gap} 分，建议重点检查三带二与连续结构的拆分。`;
 }
 
+function altSummary(item, index) {
+  const hands = item?.detail?.handCount ?? '--';
+  const score = item?.score ?? '--';
+  const splitBombCards = item?.splitBombCards ?? 0;
+  return `备选${index + 1}：总分 ${score}，手数 ${hands}，拆炸弹代价 ${splitBombCards}`;
+}
+
 export default function AiResult({
   aiResult,
   aiStatus,
@@ -65,6 +72,7 @@ export default function AiResult({
                 计算耗时：{aiResult.elapsedMs}ms
                 {aiResult.timedOut ? '（超时降级，返回当前最佳方案）' : ''}
               </p>
+              {aiResult.fromPrecompute ? <p>结果来源：发牌后后台预计算</p> : null}
               <p>搜索档位：{aiResult.searchModeLabel || '均衡'}</p>
               <p className="diff-legend">
                 <span className="tag removed">红色：AI拆开了你的组合</span>
@@ -92,12 +100,25 @@ export default function AiResult({
                   <p>AI总手数：{aiScoreView.detail.handCount}</p>
                 </div>
               ) : null}
+              {aiResult.alternatives?.length ? (
+                <details className="hint">
+                  <summary>查看 Top 备选方案（{aiResult.alternatives.length}）</summary>
+                  <ul className="combo-list ai-list">
+                    {aiResult.alternatives.map((item, index) => (
+                      <li key={`alt-${index}`}>
+                        <span>{altSummary(item, index)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </details>
+              ) : null}
             </>
           ) : (
             <>
               <p>
                 未找到高于玩家方案的 AI 推荐（当前最高：<strong>{aiResult.score}</strong>）
               </p>
+              {aiResult.fromPrecompute ? <p>结果来源：发牌后后台预计算</p> : null}
               <p>
                 搜索轮次：{aiResult.searchAttempts || 1}
                 {aiResult.timedOut ? '（包含超时降级结果）' : ''}

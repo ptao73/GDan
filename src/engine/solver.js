@@ -1,11 +1,13 @@
 import { cardSortValue, isJoker, isWildcardCard, STANDARD_RANKS } from './cards.js';
-import { COMBO_LABELS, comboPriority, detectComboTypes } from './combos.js';
+import { COMBO_LABELS, comboPriority, detectComboTypes, isFireCombo } from './combos.js';
 import { roundCorrection, scoreComboNoRound, scoreScheme } from './scoring.js';
 
 const MAX_COMBO_SIZE = 8;
 const DEFAULT_TIME_LIMIT = 3000;
 const DEFAULT_MAX_BRANCH = 24;
+const DEFAULT_TOP_K = 3;
 const MAX_POOL_SIZE = 13;
+const BOMB_SPLIT_PENALTY_PER_CARD = 3;
 
 const SIZE_LIMIT = {
   1: 1,
@@ -157,7 +159,65 @@ function candidateKey(combo) {
   return [combo.type, cardKey, combo.mainRank || '', combo.sequence ? combo.sequence.join('-') : '', combo.suit || '', combo.tripleRank || '', combo.pairRank || ''].join('|');
 }
 
-function generateCandidates(remaining, trumpRank, maxBranch) {
+function schemeKey(combos) {
+  return combos
+    .map((combo) => candidateKey(combo))
+    .sort((a, b) => a.localeCompare(b))
+    .join('||');
+}
+
+function buildBombProtection(cards) {
+  const rankCardIds = new Map();
+
+  for (const card of cards) {
+    if (isJoker(card)) continue;
+    const list = rankCardIds.get(card.rank) || [];
+    list.push(card.id);
+    rankCardIds.set(card.rank, list);
+  }
+
+  const protectedIds = new Set();
+  let protectedGroups = 0;
+
+  for (const ids of rankCardIds.values()) {
+    if (ids.length < 4) continue;
+    protectedGroups += Math.floor(ids.length / 4);
+    for (const id of ids) {
+      protectedIds.add(id);
+    }
+  }
+
+  return {
+    protectedIds,
+    protectedGroups
+  };
+}
+
+function splitBombPenalty(combo, bombProtection) {
+  if (!bombProtection || bombProtection.protectedIds.size === 0) {
+    return 0;
+  }
+
+  if (isFireCombo(combo.type)) {
+    return 0;
+  }
+
+  let involved = 0;
+  for (const card of combo.cards) {
+    if (bombProtection.protectedIds.has(card.id)) {
+      involved += 1;
+    }
+  }
+
+  return involved * BOMB_SPLIT_PENALTY_PER_CARD;
+}
+
+function candidateEstimate(combo, component, bombProtection) {
+  const splitPenalty = splitBombPenalty(combo, bombProtection);
+  return component.total * 8 + combo.cards.length * 2 + comboPriority(combo.type) - splitPenalty;
+}
+
+function generateCandidates(remaining, trumpRank, maxBranch, bombProtection) {
   const anchor = remaining[0];
   if (!anchor) {
     return [];
@@ -181,7 +241,7 @@ function generateCandidates(remaining, trumpRank, maxBranch) {
 
         seen.add(key);
         const component = scoreComboNoRound(combo, trumpRank);
-        const estimate = component.total * 8 + combo.cards.length * 2 + comboPriority(combo.type);
+        const estimate = candidateEstimate(combo, component, bombProtection);
 
         candidates.push({
           ...combo,
@@ -214,26 +274,32 @@ function generateCandidates(remaining, trumpRank, maxBranch) {
       pairRank: null
     };
     const component = scoreComboNoRound(fallback, trumpRank);
-    return [{ ...fallback, component, estimate: component.total }];
+    return [
+      {
+        ...fallback,
+        component,
+        estimate: candidateEstimate(fallback, component, bombProtection)
+      }
+    ];
   }
 
   return candidates.slice(0, maxBranch);
 }
 
-function greedyBaseline(cards, trumpRank, maxBranch) {
+function greedyBaseline(cards, trumpRank, maxBranch, bombProtection) {
   let remaining = [...cards];
   const combos = [];
   let partial = 0;
 
   while (remaining.length > 0) {
-    const candidates = generateCandidates(remaining, trumpRank, maxBranch);
+    const candidates = generateCandidates(remaining, trumpRank, maxBranch, bombProtection);
     const picked = candidates[0];
     combos.push(cloneCombo(picked));
     partial += picked.component.total;
     remaining = removeCards(remaining, picked.cards);
   }
 
-  const total = partial + roundCorrection(combos.length);
+  const total = combos.length === 0 ? 0 : partial + roundCorrection(combos.length);
   return {
     combos,
     score: total
@@ -244,43 +310,243 @@ function stateKey(remaining, comboCount) {
   return `${comboCount}|${remaining.map((card) => card.id).join('.')}`;
 }
 
-function theoreticalUpperBound(partialScore, remainCount) {
-  return partialScore + remainCount * 4 + 12;
+function theoreticalUpperBound(partialScore, remainCount, minHandsPossible) {
+  let roundUpper = 0;
+  if (minHandsPossible <= 8) {
+    roundUpper = roundCorrection(minHandsPossible);
+  } else if (minHandsPossible > 10) {
+    roundUpper = roundCorrection(minHandsPossible);
+  }
+  return partialScore + remainCount * 4 + roundUpper + 12;
+}
+
+function countSplitBombCards(combos, bombProtection) {
+  if (!bombProtection || bombProtection.protectedIds.size === 0) {
+    return {
+      splitBombCards: 0,
+      fireComboCount: 0
+    };
+  }
+
+  let splitBombCards = 0;
+  let fireComboCount = 0;
+  for (const combo of combos) {
+    if (isFireCombo(combo.type)) {
+      fireComboCount += 1;
+      continue;
+    }
+    for (const card of combo.cards || []) {
+      if (bombProtection.protectedIds.has(card.id)) {
+        splitBombCards += 1;
+      }
+    }
+  }
+
+  return {
+    splitBombCards,
+    fireComboCount
+  };
+}
+
+function buildSchemeResult(combos, trumpRank, bombProtection) {
+  const scored = scoreScheme(combos, trumpRank);
+  const protectionView = countSplitBombCards(combos, bombProtection);
+
+  return {
+    combos: cloneComboList(combos),
+    score: scored.total,
+    detail: scored.detail,
+    comboBreakdown: scored.comboBreakdown,
+    splitBombCards: protectionView.splitBombCards,
+    fireComboCount: protectionView.fireComboCount,
+    signature: schemeKey(combos)
+  };
+}
+
+function toPublicResult(result) {
+  return {
+    combos: cloneComboList(result.combos),
+    score: result.score,
+    detail: { ...result.detail },
+    comboBreakdown: result.comboBreakdown.map((item) => ({ ...item })),
+    splitBombCards: result.splitBombCards,
+    fireComboCount: result.fireComboCount
+  };
+}
+
+export function compareSchemeResult(a, b) {
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+
+  const aHands = a.detail?.handCount ?? Number.POSITIVE_INFINITY;
+  const bHands = b.detail?.handCount ?? Number.POSITIVE_INFINITY;
+  if (aHands !== bHands) {
+    return aHands - bHands;
+  }
+
+  const aScore = Number.isFinite(a.score) ? a.score : Number.NEGATIVE_INFINITY;
+  const bScore = Number.isFinite(b.score) ? b.score : Number.NEGATIVE_INFINITY;
+  if (aScore !== bScore) {
+    return bScore - aScore;
+  }
+
+  const aSplit = Number.isFinite(a.splitBombCards)
+    ? a.splitBombCards
+    : Number.POSITIVE_INFINITY;
+  const bSplit = Number.isFinite(b.splitBombCards)
+    ? b.splitBombCards
+    : Number.POSITIVE_INFINITY;
+  if (aSplit !== bSplit) {
+    return aSplit - bSplit;
+  }
+
+  const aFire = Number.isFinite(a.fireComboCount)
+    ? a.fireComboCount
+    : Number.NEGATIVE_INFINITY;
+  const bFire = Number.isFinite(b.fireComboCount)
+    ? b.fireComboCount
+    : Number.NEGATIVE_INFINITY;
+  if (aFire !== bFire) {
+    return bFire - aFire;
+  }
+
+  const aBurst = a.detail?.burstScore ?? Number.NEGATIVE_INFINITY;
+  const bBurst = b.detail?.burstScore ?? Number.NEGATIVE_INFINITY;
+  if (aBurst !== bBurst) {
+    return bBurst - aBurst;
+  }
+
+  const aShape = a.detail?.shapeScore ?? Number.NEGATIVE_INFINITY;
+  const bShape = b.detail?.shapeScore ?? Number.NEGATIVE_INFINITY;
+  if (aShape !== bShape) {
+    return bShape - aShape;
+  }
+
+  const aKey = a.detail?.keyScore ?? Number.NEGATIVE_INFINITY;
+  const bKey = b.detail?.keyScore ?? Number.NEGATIVE_INFINITY;
+  if (aKey !== bKey) {
+    return bKey - aKey;
+  }
+
+  const aSig = a.signature || schemeKey(a.combos || []);
+  const bSig = b.signature || schemeKey(b.combos || []);
+  return aSig.localeCompare(bSig);
+}
+
+function pushTopResult(topResults, topSeen, candidate, topK) {
+  if (!candidate) return;
+  const signature = candidate.signature;
+  if (!signature) return;
+
+  const existingIndex = topResults.findIndex((item) => item.signature === signature);
+  if (existingIndex >= 0) {
+    if (compareSchemeResult(candidate, topResults[existingIndex]) < 0) {
+      topResults[existingIndex] = candidate;
+      topResults.sort(compareSchemeResult);
+    }
+    return;
+  }
+
+  topResults.push(candidate);
+  topSeen.add(signature);
+  topResults.sort(compareSchemeResult);
+
+  if (topResults.length > topK) {
+    const removed = topResults.pop();
+    if (removed) {
+      topSeen.delete(removed.signature);
+    }
+  }
 }
 
 export function solveBestScheme(cards, trumpRank, options = {}) {
   const startAt = nowMs();
   const timeLimitMs = options.timeLimitMs ?? DEFAULT_TIME_LIMIT;
   const maxBranch = options.maxBranch ?? DEFAULT_MAX_BRANCH;
+  const topK = Math.max(1, Math.min(10, Math.floor(options.topK ?? DEFAULT_TOP_K)));
+  const targetScore =
+    typeof options.targetScore === 'number' ? options.targetScore : null;
+  const stopAfterSurpass =
+    Boolean(options.stopAfterSurpass) && targetScore !== null;
   const deadline = startAt + timeLimitMs;
 
   const sorted = [...cards].sort((a, b) => cardSortValue(a, trumpRank) - cardSortValue(b, trumpRank));
+  if (sorted.length === 0) {
+    const empty = {
+      combos: [],
+      score: 0,
+      detail: {
+        shapeScore: 0,
+        burstScore: 0,
+        keyScore: 0,
+        roundScore: 0,
+        handCount: 0
+      },
+      comboBreakdown: [],
+      splitBombCards: 0,
+      fireComboCount: 0
+    };
+    return {
+      ...empty,
+      timedOut: false,
+      elapsedMs: 0,
+      exact: true,
+      stopReason: 'completed',
+      surpassedTarget: false,
+      searchNodes: 0,
+      topResults: [empty],
+      alternatives: []
+    };
+  }
 
-  const baseline = greedyBaseline(sorted, trumpRank, maxBranch);
-  let bestScore = baseline.score;
-  let bestCombos = cloneComboList(baseline.combos);
+  const bombProtection = buildBombProtection(sorted);
+  const baseline = greedyBaseline(sorted, trumpRank, maxBranch, bombProtection);
+  const topSeen = new Set();
+  const topResults = [];
+  const baselineResult = buildSchemeResult(baseline.combos, trumpRank, bombProtection);
+  pushTopResult(topResults, topSeen, baselineResult, topK);
+
   let timedOut = false;
+  let stoppedAfterTarget = false;
+  let surpassedTarget = targetScore !== null && baselineResult.score > targetScore;
+  let searchNodes = 0;
 
   const memo = new Map();
   const current = [];
 
   const dfs = (remaining, partialScore) => {
+    if (stoppedAfterTarget || timedOut) {
+      return;
+    }
+    searchNodes += 1;
+
     if (nowMs() > deadline) {
       timedOut = true;
       return;
     }
 
     if (remaining.length === 0) {
-      const total = partialScore + roundCorrection(current.length);
-      if (total > bestScore) {
-        bestScore = total;
-        bestCombos = cloneComboList(current);
+      const evaluated = buildSchemeResult(current, trumpRank, bombProtection);
+      pushTopResult(topResults, topSeen, evaluated, topK);
+
+      if (targetScore !== null && evaluated.score > targetScore) {
+        surpassedTarget = true;
+        if (stopAfterSurpass) {
+          stoppedAfterTarget = true;
+        }
       }
       return;
     }
 
-    const optimistic = theoreticalUpperBound(partialScore, remaining.length);
-    if (optimistic <= bestScore) {
+    const bestResult = topResults[0] || baselineResult;
+    const minHandsPossible = current.length + Math.ceil(remaining.length / MAX_COMBO_SIZE);
+    if (bestResult && minHandsPossible > bestResult.detail.handCount) {
+      return;
+    }
+
+    const optimistic = theoreticalUpperBound(partialScore, remaining.length, minHandsPossible);
+    if (bestResult && minHandsPossible === bestResult.detail.handCount && optimistic < bestResult.score) {
       return;
     }
 
@@ -291,8 +557,11 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
     }
     memo.set(key, partialScore);
 
-    const candidates = generateCandidates(remaining, trumpRank, maxBranch);
+    const candidates = generateCandidates(remaining, trumpRank, maxBranch, bombProtection);
     for (const candidate of candidates) {
+      if (stoppedAfterTarget || timedOut) {
+        return;
+      }
       if (nowMs() > deadline) {
         timedOut = true;
         return;
@@ -303,7 +572,7 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
       dfs(nextRemaining, partialScore + candidate.component.total);
       current.pop();
 
-      if (timedOut) {
+      if (timedOut || stoppedAfterTarget) {
         return;
       }
     }
@@ -312,15 +581,23 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
   dfs(sorted, 0);
 
   const elapsedMs = Math.round(nowMs() - startAt);
-  const scored = scoreScheme(bestCombos, trumpRank);
+  const finalTop = topResults.length > 0 ? topResults : [baselineResult];
+  const publicTop = finalTop.map((item) => toPublicResult(item));
+  const best = publicTop[0];
 
   return {
-    combos: bestCombos,
-    score: scored.total,
-    detail: scored.detail,
-    comboBreakdown: scored.comboBreakdown,
+    ...best,
     timedOut,
     elapsedMs,
-    exact: !timedOut
+    exact: !timedOut && !stoppedAfterTarget,
+    stopReason: timedOut
+      ? 'timeout'
+      : stoppedAfterTarget
+      ? 'target-surpassed'
+      : 'completed',
+    surpassedTarget,
+    searchNodes,
+    topResults: publicTop,
+    alternatives: publicTop.slice(1)
   };
 }

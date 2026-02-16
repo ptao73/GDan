@@ -5,63 +5,85 @@ import { useEffect, useRef } from 'react';
  * 返回 runAiSearchWithWorker 方法供 AI 搜索调用
  */
 export function useWorker() {
-  const workerRef = useRef(null);
-  const pendingRef = useRef(new Map());
+  const tasksRef = useRef(new Map());
 
   useEffect(() => {
-    const worker = new Worker(
-      new URL('../workers/solverWorker.js', import.meta.url),
-      { type: 'module' }
-    );
-
-    worker.onmessage = (event) => {
-      const { requestId, result, error } = event.data || {};
-      const pending = pendingRef.current.get(requestId);
-      if (!pending) return;
-
-      clearTimeout(pending.timer);
-      pendingRef.current.delete(requestId);
-
-      if (error) {
-        pending.reject(new Error(error));
-      } else {
-        pending.resolve(result);
-      }
-    };
-
-    workerRef.current = worker;
-
     return () => {
-      for (const pending of pendingRef.current.values()) {
-        clearTimeout(pending.timer);
-        pending.reject(new Error('Worker closed'));
+      for (const task of tasksRef.current.values()) {
+        clearTimeout(task.timer);
+        task.reject(new Error('Worker closed'));
+        task.worker.terminate();
       }
-      pendingRef.current.clear();
-      worker.terminate();
+      tasksRef.current.clear();
     };
   }, []);
 
   function runAiSearchWithWorker(cards, trumpRank, options = {}) {
-    const worker = workerRef.current;
-    if (!worker) {
-      return Promise.reject(new Error('Worker unavailable'));
-    }
-
     const timeLimitMs = options.timeLimitMs ?? 3000;
     const maxBranch = options.maxBranch;
+    const topK = options.topK;
+    const targetScore = options.targetScore;
+    const stopAfterSurpass = Boolean(options.stopAfterSurpass);
     const watchdogMs = Math.max(3600, timeLimitMs + 900);
 
     return new Promise((resolve, reject) => {
       const requestId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const worker = new Worker(
+        new URL('../workers/solverWorker.js', import.meta.url),
+        { type: 'module' }
+      );
+
+      const cleanup = () => {
+        const task = tasksRef.current.get(requestId);
+        if (!task) return;
+        clearTimeout(task.timer);
+        tasksRef.current.delete(requestId);
+        task.worker.terminate();
+      };
+
       const timer = window.setTimeout(() => {
-        pendingRef.current.delete(requestId);
+        cleanup();
         reject(new Error('AI worker timeout'));
       }, watchdogMs);
 
-      pendingRef.current.set(requestId, { resolve, reject, timer });
-      worker.postMessage({ requestId, cards, trumpRank, timeLimitMs, maxBranch });
+      worker.onmessage = (event) => {
+        const payload = event.data || {};
+        if (payload.requestId !== requestId) return;
+        cleanup();
+        if (payload.error) {
+          reject(new Error(payload.error));
+          return;
+        }
+        resolve(payload.result);
+      };
+
+      worker.onerror = () => {
+        cleanup();
+        reject(new Error('AI worker failed'));
+      };
+
+      tasksRef.current.set(requestId, { worker, resolve, reject, timer });
+      worker.postMessage({
+        requestId,
+        cards,
+        trumpRank,
+        timeLimitMs,
+        maxBranch,
+        topK,
+        targetScore,
+        stopAfterSurpass
+      });
     });
   }
 
-  return { runAiSearchWithWorker };
+  function cancelPendingSearches(reason = 'AI worker task cancelled') {
+    for (const task of tasksRef.current.values()) {
+      clearTimeout(task.timer);
+      task.reject(new Error(reason));
+      task.worker.terminate();
+    }
+    tasksRef.current.clear();
+  }
+
+  return { runAiSearchWithWorker, cancelPendingSearches };
 }
