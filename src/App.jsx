@@ -13,17 +13,7 @@ export default function App() {
 
   return (
     <main className="page">
-      <Header
-        startNewDeal={g.startNewDeal}
-        exportHistory={g.exportHistory}
-        openImportDialog={g.openImportDialog}
-        importHistory={g.importHistory}
-        importInputRef={g.importInputRef}
-        isSolving={g.isSolving}
-        aiSearchMode={g.aiSearchMode}
-        aiSearchModeOptions={g.aiSearchModeOptions}
-        setAiSearchMode={g.setAiSearchMode}
-      />
+      <Header />
 
       {/* Toast 通知：右下角浮动，key 驱动动画重播 */}
       {g.notice ? (
@@ -40,6 +30,35 @@ export default function App() {
               <p className="cards-trump">当前打 "{g.trumpRank}"</p>
             </div>
             <div className="cards-main">
+              <div className="cards-main-tools">
+                <button className="ghost" onClick={g.exportHistory} disabled={g.isSolving}>
+                  导出JSON
+                </button>
+                <button className="ghost" onClick={g.openImportDialog} disabled={g.isSolving}>
+                  导入JSON
+                </button>
+                <label className="mode-selector cards-mode-selector">
+                  <span>AI搜索档位</span>
+                  <select
+                    value={g.aiSearchMode}
+                    onChange={(event) => g.setAiSearchMode(event.target.value)}
+                    disabled={g.isSolving}
+                  >
+                    {g.aiSearchModeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <input
+                  ref={g.importInputRef}
+                  className="hidden-input"
+                  type="file"
+                  accept="application/json"
+                  onChange={g.importHistory}
+                />
+              </div>
               <CardMatrix
                 remainingCards={g.remainingCards}
                 selectedIds={g.selectedIds}
@@ -66,8 +85,8 @@ export default function App() {
             <span className={`assign-state ${g.canAnalyze ? 'ok' : 'pending'}`}>
               已分配 {g.assignedCardsCount}/27
             </span>
-            <button onClick={g.submitScoring} disabled={!g.canAnalyze}>
-              {g.isSolving ? '专家正在计算中...' : '开始分析（AI对照）'}
+            <button onClick={g.handlePrimaryAction} disabled={g.primaryActionDisabled}>
+              {g.primaryActionLabel}
             </button>
           </div>
           <ComboList
@@ -93,9 +112,10 @@ export default function App() {
 
       <BottomBar
         assignedCardsCount={g.assignedCardsCount}
-        canAnalyze={g.canAnalyze}
         isSolving={g.isSolving}
-        submitScoring={g.submitScoring}
+        handlePrimaryAction={g.handlePrimaryAction}
+        primaryActionLabel={g.primaryActionLabel}
+        primaryActionDisabled={g.primaryActionDisabled}
         aiSearchModeLabel={g.aiSearchModeLabel}
       />
     </main>

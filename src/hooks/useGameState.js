@@ -70,6 +70,7 @@ export function useGameState() {
   const [aiResult, setAiResult] = useState(null);
   const [aiStatus, setAiStatus] = useState('idle');
   const [aiSearchMode, setAiSearchMode] = useState('balanced');
+  const [primaryActionMode, setPrimaryActionMode] = useState('deal');
 
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
@@ -117,6 +118,8 @@ export function useGameState() {
   const isSolving = aiStatus === 'running';
   const assignedCardsCount = dealtCards.length - remainingCards.length;
   const canAnalyze = assignedCardsCount === 27 && !isSolving;
+  const primaryActionLabel = primaryActionMode === 'deal' ? '新开局' : 'AI分析';
+  const primaryActionDisabled = isSolving || (primaryActionMode === 'analyze' && !canAnalyze);
 
   const matrixCounts = useMemo(() => {
     const counts = {};
@@ -356,62 +359,87 @@ export function useGameState() {
   async function submitScoring() {
     if (isSolving) {
       setNotice('专家正在计算中，请勿重复提交。');
-      return;
+      return false;
     }
 
     if (remainingCards.length > 0) {
       setNotice(`还有 ${remainingCards.length} 张牌未分配，请完成全部 27 张组牌。`);
+      return false;
+    }
+
+    try {
+      const userScoreResult = scoreScheme(userCombos, trumpRank);
+      setUserScore(userScoreResult);
+      setAiStatus('running');
+
+      const modeKey = aiSearchMode;
+      const profiles =
+        AI_SEARCH_PROFILES_BY_MODE[modeKey] || AI_SEARCH_PROFILES_BY_MODE.balanced;
+      const modeLabel = AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced;
+      const { ai, usedFallback } = await findAiRecommendation(
+        userScoreResult.total,
+        profiles,
+        modeKey
+      );
+      setAiResult(ai);
+      setAiStatus('done');
+
+      const gameRecord = {
+        id: `g-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        timestamp: Date.now(),
+        trumpRank,
+        dealtCards,
+        userCombos,
+        userScore: userScoreResult.total,
+        userScoreDetail: userScoreResult.detail,
+        aiCombos: ai.combos,
+        aiScore: ai.score,
+        aiScoreDetail: ai.detail,
+        aiSearchMode: modeKey,
+        hasAiRecommendation: ai.score > userScoreResult.total,
+        isOptimal: ai.score <= userScoreResult.total
+      };
+
+      try {
+        await DataService.saveGame(gameRecord);
+        await refreshHistoryAndStats();
+        if (ai.score > userScoreResult.total) {
+          setNotice(
+            usedFallback
+              ? `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮，含降级计算）并保存本局。`
+              : `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮）并保存本局。`
+          );
+        } else {
+          setNotice(
+            `已执行${modeLabel}多轮搜索，仍未找到高于玩家得分的方案；你的方案可能已接近最优。`
+          );
+        }
+      } catch (error) {
+        setNotice('本局评分完成，但保存历史失败。');
+      }
+      return true;
+    } catch (error) {
+      setAiStatus('idle');
+      setNotice('AI 计算失败，请重试。');
+      return false;
+    }
+  }
+
+  async function handlePrimaryAction() {
+    if (isSolving) {
+      setNotice('专家正在计算中，请稍后。');
       return;
     }
 
-    const userScoreResult = scoreScheme(userCombos, trumpRank);
-    setUserScore(userScoreResult);
-    setAiStatus('running');
+    if (primaryActionMode === 'deal') {
+      startNewDeal();
+      setPrimaryActionMode('analyze');
+      return;
+    }
 
-    const modeKey = aiSearchMode;
-    const profiles =
-      AI_SEARCH_PROFILES_BY_MODE[modeKey] || AI_SEARCH_PROFILES_BY_MODE.balanced;
-    const modeLabel = AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced;
-    const { ai, usedFallback } = await findAiRecommendation(
-      userScoreResult.total,
-      profiles,
-      modeKey
-    );
-    setAiResult(ai);
-    setAiStatus('done');
-
-    const gameRecord = {
-      id: `g-${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      timestamp: Date.now(),
-      trumpRank,
-      dealtCards,
-      userCombos,
-      userScore: userScoreResult.total,
-      userScoreDetail: userScoreResult.detail,
-      aiCombos: ai.combos,
-      aiScore: ai.score,
-      aiScoreDetail: ai.detail,
-      aiSearchMode: modeKey,
-      hasAiRecommendation: ai.score > userScoreResult.total,
-      isOptimal: ai.score <= userScoreResult.total
-    };
-
-    try {
-      await DataService.saveGame(gameRecord);
-      await refreshHistoryAndStats();
-      if (ai.score > userScoreResult.total) {
-        setNotice(
-          usedFallback
-            ? `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮，含降级计算）并保存本局。`
-            : `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮）并保存本局。`
-        );
-      } else {
-        setNotice(
-          `已执行${modeLabel}多轮搜索，仍未找到高于玩家得分的方案；你的方案可能已接近最优。`
-        );
-      }
-    } catch (error) {
-      setNotice('本局评分完成，但保存历史失败。');
+    const success = await submitScoring();
+    if (success) {
+      setPrimaryActionMode('deal');
     }
   }
 
@@ -484,7 +512,11 @@ export function useGameState() {
     aiSearchMode,
     aiSearchModeLabel,
     aiSearchModeOptions: AI_SEARCH_MODE_OPTIONS,
+    primaryActionMode,
+    primaryActionLabel,
+    primaryActionDisabled,
     startNewDeal,
+    handlePrimaryAction,
     toggleCard,
     removeGroup,
     confirmGroup,
