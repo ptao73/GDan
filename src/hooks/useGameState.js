@@ -54,6 +54,31 @@ const AI_SEARCH_PROFILES_BY_MODE = {
   ]
 };
 
+function isIosLikeDevice() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const isClassicIos = /iPad|iPhone|iPod/.test(ua);
+  const isIpadDesktopUa = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
+  return isClassicIos || isIpadDesktopUa;
+}
+
+function resolveAiProfiles(modeKey, iosOptimized) {
+  const base = AI_SEARCH_PROFILES_BY_MODE[modeKey] || AI_SEARCH_PROFILES_BY_MODE.balanced;
+  if (!iosOptimized) {
+    return base;
+  }
+
+  const timeCaps = [2200, 3200, 4200, 5200, 6200];
+  return base.map((profile, index) => ({
+    ...profile,
+    timeLimitMs: Math.min(profile.timeLimitMs, timeCaps[index] || 6200),
+    maxBranch: Math.max(
+      16,
+      Math.min(profile.maxBranch || 24, profile.mode === 'worker' ? 34 : 30)
+    )
+  }));
+}
+
 /**
  * 游戏核心状态管理 Hook
  * 包含所有状态变量、计算属性、和操作方法
@@ -71,6 +96,7 @@ export function useGameState() {
   const [aiStatus, setAiStatus] = useState('idle');
   const [aiSearchMode, setAiSearchMode] = useState('balanced');
   const [primaryActionMode, setPrimaryActionMode] = useState('deal');
+  const [iosOptimized, setIosOptimized] = useState(false);
 
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
@@ -175,10 +201,14 @@ export function useGameState() {
   }, [notice]);
 
   useEffect(() => {
+    const isIosRuntime = isIosLikeDevice();
+    setIosOptimized(isIosRuntime);
     try {
       const saved = window.localStorage.getItem(AI_MODE_STORAGE_KEY);
       if (saved && AI_SEARCH_PROFILES_BY_MODE[saved]) {
         setAiSearchMode(saved);
+      } else if (isIosRuntime) {
+        setAiSearchMode('fast');
       }
     } catch (error) {
       // Ignore storage failures in privacy-restricted environments.
@@ -373,8 +403,7 @@ export function useGameState() {
       setAiStatus('running');
 
       const modeKey = aiSearchMode;
-      const profiles =
-        AI_SEARCH_PROFILES_BY_MODE[modeKey] || AI_SEARCH_PROFILES_BY_MODE.balanced;
+      const profiles = resolveAiProfiles(modeKey, iosOptimized);
       const modeLabel = AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced;
       const { ai, usedFallback } = await findAiRecommendation(
         userScoreResult.total,

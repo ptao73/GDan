@@ -101,7 +101,7 @@ export default function ComboList({
           {aiStatus === 'running' ? <SolvingIndicator /> : null}
           <ul className="combo-list ai-list">
             {!hasAiColumn ? (
-              <li className="combo-empty">点击“开始分析（AI对照）”后展示。</li>
+              <li className="combo-empty">点击“AI分析”后展示。</li>
             ) : sortedAiItems.length === 0 ? (
               <li className="combo-empty">当前无可展示的 AI 组牌。</li>
             ) : (

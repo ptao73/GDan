@@ -8,6 +8,8 @@
   box-shadow: 0 3px 8px rgba(45, 34, 23, 0.16);
   color: #222018;
   cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
   padding: 0;
   display: flex;
   align-items: center;
@@ -124,51 +126,11 @@
   display: none;
 }
 
-@media (max-width: 640px) {
-  .playing-card {
-    width: 45px;
-    height: 64px;
-    border-radius: 7px;
-  }
-
-  .card-tl,
-  .card-br {
-    font-size: 10px;
-  }
-
-  .card-suit-small {
-    font-size: 9px;
-  }
-
-  .card-center {
-    font-size: 17px;
-  }
-
-  .playing-card.joker .card-center {
-    font-size: 11px;
-  }
-}
-
-@media (max-width: 390px) {
-  .playing-card {
-    width: 40px;
-    height: 57px;
-  }
-
-  .card-tl,
-  .card-br {
-    font-size: 9px;
-  }
-
-  .card-suit-small {
-    font-size: 8px;
-  }
-
-  .card-center {
-    font-size: 15px;
-  }
-
-  .playing-card.joker .card-center {
-    font-size: 10px;
+@media (hover: none) and (pointer: coarse) {
+  .playing-card:hover {
+    transform: none;
+    border-color: #d4c6b2;
+    background: linear-gradient(165deg, #ffffff, #f6f3ed);
+    box-shadow: 0 3px 8px rgba(45, 34, 23, 0.16);
   }
 }

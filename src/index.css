@@ -22,11 +22,21 @@
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+  background: var(--bg-canvas);
+}
+
 body {
   margin: 0;
-  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
   color: var(--ink-main);
   font-family: 'STKaiti', 'Kaiti SC', 'Songti SC', 'Noto Serif SC', serif;
+  line-height: 1.4;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   background:
     radial-gradient(circle at 7% 9%, rgba(194, 72, 47, 0.16), transparent 30%),
     radial-gradient(circle at 90% 12%, rgba(47, 95, 123, 0.18), transparent 33%),
@@ -50,5 +60,6 @@ textarea {
 
 #root {
   width: 100%;
-  min-height: 100vh;
+  min-height: 100svh;
+  min-height: 100dvh;
 }
