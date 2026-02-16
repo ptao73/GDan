@@ -1,7 +1,6 @@
 import './App.css';
 import { useGameState } from './hooks/useGameState.js';
 import Header from './components/Header.jsx';
-import StatusBar from './components/StatusBar.jsx';
 import CardMatrix from './components/CardMatrix.jsx';
 import SelectionPanel from './components/SelectionPanel.jsx';
 import ComboList from './components/ComboList.jsx';
@@ -35,25 +34,21 @@ export default function App() {
 
       <section className="layout-grid main-grid">
         <article className="panel cards-panel">
-          <div className="cards-head">
-            <h2>手牌区</h2>
-            <StatusBar
-              className="merged"
-              trumpRank={g.trumpRank}
-              assignedCardsCount={g.assignedCardsCount}
-              remainingCount={g.remainingCards.length}
-              jokersRemain={g.jokersRemain}
-              wildcardRemain={g.wildcardRemain}
-              aiSearchModeLabel={g.aiSearchModeLabel}
-            />
+          <div className="cards-layout">
+            <div className="cards-side">
+              <h2>手牌区</h2>
+              <p className="cards-trump">当前打 "{g.trumpRank}"</p>
+            </div>
+            <div className="cards-main">
+              <CardMatrix
+                remainingCards={g.remainingCards}
+                selectedIds={g.selectedIds}
+                toggleCard={g.toggleCard}
+                trumpRank={g.trumpRank}
+                isSolving={g.isSolving}
+              />
+            </div>
           </div>
-          <CardMatrix
-            remainingCards={g.remainingCards}
-            selectedIds={g.selectedIds}
-            toggleCard={g.toggleCard}
-            trumpRank={g.trumpRank}
-            isSolving={g.isSolving}
-          />
           <SelectionPanel
             selectedCards={g.selectedCards}
             candidateTypes={g.candidateTypes}
