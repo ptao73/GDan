@@ -391,9 +391,7 @@ button.ghost:hover {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.76),
     0 8px 18px rgba(85, 65, 38, 0.12);
-  overflow-x: auto;
-  overflow-y: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
 }
 
 .matrix-meta {
@@ -414,17 +412,76 @@ button.ghost:hover {
   letter-spacing: 1.5px;
 }
 
-.matrix-meta-trump {
+.matrix-stage {
+  display: grid;
+  grid-template-columns: 94px 1fr;
+  align-items: start;
+  gap: 8px;
+}
+
+.matrix-trump-side {
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  align-content: start;
+  padding-top: 2px;
+}
+
+.matrix-trump-label {
   margin: 0;
   color: #c4312e;
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 700;
-  line-height: 1.15;
+  letter-spacing: 1px;
+}
+
+.matrix-trump-card {
+  position: relative;
+  width: 58px;
+  aspect-ratio: 2 / 3;
+  border-radius: 8px;
+  border: 1.5px solid #d7c5aa;
+  background: linear-gradient(165deg, #fff, #f6f2ea);
+  color: #c4312e;
+  box-shadow: 0 3px 8px rgba(45, 34, 23, 0.14);
+}
+
+.matrix-trump-card .trump-rank {
+  position: absolute;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.matrix-trump-card .trump-rank.tl {
+  left: 5px;
+  top: 4px;
+}
+
+.matrix-trump-card .trump-rank.br {
+  right: 5px;
+  bottom: 4px;
+  transform: rotate(180deg);
+}
+
+.matrix-trump-card .trump-suit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.matrix-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .card-matrix-grid {
   width: fit-content;
-  margin: 0 auto;
+  margin: 0;
   display: grid;
   gap: var(--matrix-gap);
   padding: 0;
@@ -1137,8 +1194,26 @@ button.ghost:hover {
     letter-spacing: 1px;
   }
 
-  .matrix-meta-trump {
+  .matrix-stage {
+    grid-template-columns: 72px 1fr;
+    gap: 6px;
+  }
+
+  .matrix-trump-label {
     font-size: 18px;
+  }
+
+  .matrix-trump-card {
+    width: 46px;
+    border-radius: 7px;
+  }
+
+  .matrix-trump-card .trump-rank {
+    font-size: 10px;
+  }
+
+  .matrix-trump-card .trump-suit {
+    font-size: 19px;
   }
 
   .cards-main-tools {

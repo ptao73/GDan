@@ -39,52 +39,63 @@ export default function CardMatrix({
     <div className="matrix-board">
       <div className="matrix-meta">
         <h2>手牌区</h2>
-        <p className="matrix-meta-trump">当前打 "{trumpRank}"</p>
       </div>
-      <div className="card-matrix-grid">
-        <div className="matrix-body">
-          {SUIT_ROWS.map((suit, rowIndex) => (
-            <div key={suit.key} className={`matrix-row matrix-row-${rowIndex}`}>
-              <span className={`matrix-suit-head ${suit.isRed ? 'red' : ''}`}>
-                {suit.label}
-              </span>
-              {MATRIX_COLUMNS.map((rank) => {
-                const isJokerColumn = JOKER_RANKS.includes(rank);
-                const isVirtualJokerCell = isJokerColumn && suit.key !== 'S';
-                const key = isJokerColumn ? `J-${rank}-${suit.key}` : `${suit.key}-${rank}`;
-                const cardsInCell = isJokerColumn
-                  ? suit.key === 'S'
-                    ? jokerMatrix[rank]
-                    : []
-                  : matrix[`${suit.key}-${rank}`] || [];
+      <div className="matrix-stage">
+        <aside className="matrix-trump-side">
+          <p className="matrix-trump-label">当前打</p>
+          <div className="matrix-trump-card" aria-label={`红桃${trumpRank}`}>
+            <span className="trump-rank tl">{trumpRank}</span>
+            <span className="trump-suit">♥</span>
+            <span className="trump-rank br">{trumpRank}</span>
+          </div>
+        </aside>
+        <div className="matrix-scroll">
+          <div className="card-matrix-grid">
+            <div className="matrix-body">
+              {SUIT_ROWS.map((suit, rowIndex) => (
+                <div key={suit.key} className={`matrix-row matrix-row-${rowIndex}`}>
+                  <span className={`matrix-suit-head ${suit.isRed ? 'red' : ''}`}>
+                    {suit.label}
+                  </span>
+                  {MATRIX_COLUMNS.map((rank) => {
+                    const isJokerColumn = JOKER_RANKS.includes(rank);
+                    const isVirtualJokerCell = isJokerColumn && suit.key !== 'S';
+                    const key = isJokerColumn ? `J-${rank}-${suit.key}` : `${suit.key}-${rank}`;
+                    const cardsInCell = isJokerColumn
+                      ? suit.key === 'S'
+                        ? jokerMatrix[rank]
+                        : []
+                      : matrix[`${suit.key}-${rank}`] || [];
 
-                return (
-                  <div
-                    key={key}
-                    className={`matrix-card-cell ${cardsInCell.length === 0 ? 'empty' : ''} ${
-                      isVirtualJokerCell ? 'joker-virtual' : ''
-                    }`}
-                  >
-                    {cardsInCell.length === 0 ? (
-                      isVirtualJokerCell ? null : <span className="matrix-empty-slot" />
-                    ) : (
-                      <div className={`matrix-stack ${cardsInCell.length > 1 ? 'has-pair' : ''}`}>
-                        {cardsInCell.map((card) => (
-                          <PlayingCard
-                            key={card.id}
-                            card={card}
-                            isSelected={selectedIds.includes(card.id)}
-                            onClick={() => toggleCard(card.id)}
-                            disabled={isSolving}
-                          />
-                        ))}
+                    return (
+                      <div
+                        key={key}
+                        className={`matrix-card-cell ${cardsInCell.length === 0 ? 'empty' : ''} ${
+                          isVirtualJokerCell ? 'joker-virtual' : ''
+                        }`}
+                      >
+                        {cardsInCell.length === 0 ? (
+                          isVirtualJokerCell ? null : <span className="matrix-empty-slot" />
+                        ) : (
+                          <div className={`matrix-stack ${cardsInCell.length > 1 ? 'has-pair' : ''}`}>
+                            {cardsInCell.map((card) => (
+                              <PlayingCard
+                                key={card.id}
+                                card={card}
+                                isSelected={selectedIds.includes(card.id)}
+                                onClick={() => toggleCard(card.id)}
+                                disabled={isSolving}
+                              />
+                            ))}
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                );
-              })}
+                    );
+                  })}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </div>
