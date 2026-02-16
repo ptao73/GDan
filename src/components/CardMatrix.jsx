@@ -38,18 +38,6 @@ export default function CardMatrix({
   return (
     <div className="matrix-board">
       <div className="card-matrix-grid">
-        <div className="matrix-head-row">
-          <span className="matrix-corner" />
-          {MATRIX_COLUMNS.map((rank) => (
-            <span
-              key={`head-${rank}`}
-              className={`matrix-rank-head ${JOKER_RANKS.includes(rank) ? 'joker-head' : ''}`}
-            >
-              {rank === 'BJ' ? '大王' : rank === 'SJ' ? '小王' : rank}
-            </span>
-          ))}
-        </div>
-
         <div className="matrix-body">
           {SUIT_ROWS.map((suit, rowIndex) => (
             <div key={suit.key} className={`matrix-row matrix-row-${rowIndex}`}>
