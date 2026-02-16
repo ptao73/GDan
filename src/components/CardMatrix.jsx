@@ -37,6 +37,10 @@ export default function CardMatrix({
 
   return (
     <div className="matrix-board">
+      <div className="matrix-meta">
+        <h2>手牌区</h2>
+        <p className="matrix-meta-trump">当前打 "{trumpRank}"</p>
+      </div>
       <div className="card-matrix-grid">
         <div className="matrix-body">
           {SUIT_ROWS.map((suit, rowIndex) => (

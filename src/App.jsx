@@ -24,49 +24,43 @@ export default function App() {
 
       <section className="layout-grid main-grid">
         <article className="panel cards-panel">
-          <div className="cards-layout">
-            <div className="cards-side">
-              <h2>手牌区</h2>
-              <p className="cards-trump">当前打 "{g.trumpRank}"</p>
-            </div>
-            <div className="cards-main">
-              <div className="cards-main-tools">
-                <button className="ghost" onClick={g.exportHistory} disabled={g.isSolving}>
-                  导出JSON
-                </button>
-                <button className="ghost" onClick={g.openImportDialog} disabled={g.isSolving}>
-                  导入JSON
-                </button>
-                <label className="mode-selector cards-mode-selector">
-                  <span>AI搜索档位</span>
-                  <select
-                    value={g.aiSearchMode}
-                    onChange={(event) => g.setAiSearchMode(event.target.value)}
-                    disabled={g.isSolving}
-                  >
-                    {g.aiSearchModeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <input
-                  ref={g.importInputRef}
-                  className="hidden-input"
-                  type="file"
-                  accept="application/json"
-                  onChange={g.importHistory}
-                />
-              </div>
-              <CardMatrix
-                remainingCards={g.remainingCards}
-                selectedIds={g.selectedIds}
-                toggleCard={g.toggleCard}
-                trumpRank={g.trumpRank}
-                isSolving={g.isSolving}
+          <div className="cards-main">
+            <div className="cards-main-tools">
+              <button className="ghost" onClick={g.exportHistory} disabled={g.isSolving}>
+                导出JSON
+              </button>
+              <button className="ghost" onClick={g.openImportDialog} disabled={g.isSolving}>
+                导入JSON
+              </button>
+              <label className="mode-selector cards-mode-selector">
+                <span>AI搜索档位</span>
+                <select
+                  value={g.aiSearchMode}
+                  onChange={(event) => g.setAiSearchMode(event.target.value)}
+                  disabled={g.isSolving}
+                >
+                  {g.aiSearchModeOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <input
+                ref={g.importInputRef}
+                className="hidden-input"
+                type="file"
+                accept="application/json"
+                onChange={g.importHistory}
               />
             </div>
+            <CardMatrix
+              remainingCards={g.remainingCards}
+              selectedIds={g.selectedIds}
+              toggleCard={g.toggleCard}
+              trumpRank={g.trumpRank}
+              isSolving={g.isSolving}
+            />
           </div>
           <SelectionPanel
             selectedCards={g.selectedCards}
