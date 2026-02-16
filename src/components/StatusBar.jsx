@@ -4,10 +4,11 @@ export default function StatusBar({
   remainingCount,
   jokersRemain,
   wildcardRemain,
-  aiSearchModeLabel
+  aiSearchModeLabel,
+  className = ''
 }) {
   return (
-    <section className="status-bar">
+    <section className={`status-bar ${className}`.trim()}>
       <span>
         当前打几：<strong>{trumpRank}</strong>
       </span>

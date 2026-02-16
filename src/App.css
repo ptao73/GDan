@@ -179,6 +179,41 @@ button.ghost:hover {
   font-size: 15px;
 }
 
+.cards-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  border-bottom: 2px solid rgba(196, 177, 148, 0.74);
+}
+
+.cards-head > h2 {
+  margin: 0;
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.status-bar.merged {
+  flex: 1;
+  min-width: 560px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  animation: none;
+}
+
+.status-bar.merged span {
+  padding: 8px 10px;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
 .notice {
   position: fixed;
   right: 18px;
@@ -232,7 +267,7 @@ button.ghost:hover {
   letter-spacing: 0.5px;
 }
 
-.cards-panel > h2,
+.cards-head > h2,
 .combos-panel > h2 {
   font-size: clamp(36px, 4.6vw, 52px);
   letter-spacing: 2px;
@@ -300,7 +335,7 @@ button.ghost:hover {
 .matrix-head-row,
 .matrix-row {
   display: grid;
-  grid-template-columns: var(--matrix-side-col) repeat(13, var(--matrix-col-w));
+  grid-template-columns: var(--matrix-side-col) repeat(15, var(--matrix-col-w));
   column-gap: var(--matrix-gap);
 }
 
@@ -360,6 +395,10 @@ button.ghost:hover {
   z-index: 5;
 }
 
+.matrix-rank-head.joker-head {
+  font-size: 13px;
+}
+
 .matrix-suit-head {
   min-height: var(--matrix-row-h);
   font-size: 22px;
@@ -385,6 +424,10 @@ button.ghost:hover {
 
 .matrix-card-cell.empty {
   background: rgba(255, 255, 255, 0.18);
+}
+
+.matrix-card-cell.joker-virtual {
+  background: transparent;
 }
 
 .matrix-empty-slot {
@@ -920,8 +963,13 @@ button.ghost:hover {
     grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   }
 
-  .status-bar {
+  .status-bar:not(.merged) {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+
+  .status-bar.merged {
+    min-width: 0;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 
@@ -987,14 +1035,32 @@ button.ghost:hover {
     font-size: 15px;
   }
 
-  .cards-panel > h2,
+  .cards-head > h2,
   .combos-panel > h2 {
     font-size: clamp(30px, 9vw, 42px);
     letter-spacing: 1px;
   }
 
-  .status-bar {
+  .cards-head {
+    display: grid;
+    border-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .status-bar:not(.merged) {
     grid-template-columns: 1fr;
+  }
+
+  .status-bar.merged {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .status-bar.merged span {
+    white-space: normal;
+    line-height: 1.2;
+    font-size: 12px;
+    padding: 7px 8px;
   }
 
   .score-grid {
@@ -1054,6 +1120,10 @@ button.ghost:hover {
 @media (max-width: 390px) {
   .hero h1 {
     font-size: 24px;
+  }
+
+  .status-bar.merged {
+    grid-template-columns: 1fr;
   }
 
   .matrix-board {

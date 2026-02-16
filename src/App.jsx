@@ -26,15 +26,6 @@ export default function App() {
         setAiSearchMode={g.setAiSearchMode}
       />
 
-      <StatusBar
-        trumpRank={g.trumpRank}
-        assignedCardsCount={g.assignedCardsCount}
-        remainingCount={g.remainingCards.length}
-        jokersRemain={g.jokersRemain}
-        wildcardRemain={g.wildcardRemain}
-        aiSearchModeLabel={g.aiSearchModeLabel}
-      />
-
       {/* Toast 通知：右下角浮动，key 驱动动画重播 */}
       {g.notice ? (
         <p key={g.notice} className="notice">
@@ -44,7 +35,18 @@ export default function App() {
 
       <section className="layout-grid main-grid">
         <article className="panel cards-panel">
-          <h2>手牌区</h2>
+          <div className="cards-head">
+            <h2>手牌区</h2>
+            <StatusBar
+              className="merged"
+              trumpRank={g.trumpRank}
+              assignedCardsCount={g.assignedCardsCount}
+              remainingCount={g.remainingCards.length}
+              jokersRemain={g.jokersRemain}
+              wildcardRemain={g.wildcardRemain}
+              aiSearchModeLabel={g.aiSearchModeLabel}
+            />
+          </div>
           <CardMatrix
             remainingCards={g.remainingCards}
             selectedIds={g.selectedIds}
