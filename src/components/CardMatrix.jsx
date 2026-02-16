@@ -41,10 +41,7 @@ export default function CardMatrix({
         <div className="matrix-head-row">
           <span className="matrix-corner" />
           {RANKS.map((rank) => (
-            <span
-              key={`head-${rank}`}
-              className={`matrix-rank-head ${rank === trumpRank ? 'trump' : ''}`}
-            >
+            <span key={`head-${rank}`} className="matrix-rank-head">
               {rank}
             </span>
           ))}
@@ -59,15 +56,11 @@ export default function CardMatrix({
               {RANKS.map((rank) => {
                 const key = `${suit.key}-${rank}`;
                 const cardsInCell = matrix[key] || [];
-                const isTrumpColumn = rank === trumpRank;
-                const isWildColumn = suit.key === 'H' && rank === trumpRank;
 
                 return (
                   <div
                     key={key}
-                    className={`matrix-card-cell ${isTrumpColumn ? 'trump-col' : ''} ${
-                      isWildColumn ? 'wild-col' : ''
-                    } ${cardsInCell.length === 0 ? 'empty' : ''}`}
+                    className={`matrix-card-cell ${cardsInCell.length === 0 ? 'empty' : ''}`}
                   >
                     {cardsInCell.length === 0 ? (
                       <span className="matrix-empty-slot" />
@@ -112,7 +105,6 @@ export default function CardMatrix({
           )}
         </div>
       </div>
-      <p className="hint">点选矩阵中的牌进行选择。级牌列高亮，♥级牌即逢人配。</p>
     </div>
   );
 }

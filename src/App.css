@@ -360,12 +360,6 @@ button.ghost:hover {
   z-index: 5;
 }
 
-.matrix-rank-head.trump {
-  border-color: rgba(204, 80, 60, 0.68);
-  background: linear-gradient(120deg, #fff4f1, #ffe4dd);
-  color: #ae2f21;
-}
-
 .matrix-suit-head {
   min-height: var(--matrix-row-h);
   font-size: 22px;
@@ -380,7 +374,7 @@ button.ghost:hover {
   position: relative;
   min-height: var(--matrix-row-h);
   border-radius: 8px;
-  border: 1px dashed rgba(197, 180, 153, 0.86);
+  border: 1px solid transparent;
   background: rgba(255, 255, 255, 0.28);
   display: flex;
   align-items: center;
@@ -393,22 +387,12 @@ button.ghost:hover {
   background: rgba(255, 255, 255, 0.18);
 }
 
-.matrix-card-cell.trump-col {
-  border-color: rgba(192, 100, 82, 0.68);
-  background: rgba(255, 236, 230, 0.45);
-}
-
-.matrix-card-cell.wild-col {
-  border-color: rgba(205, 72, 47, 0.65);
-  background: linear-gradient(135deg, rgba(255, 226, 219, 0.52), rgba(255, 242, 238, 0.86));
-}
-
 .matrix-empty-slot {
   width: min(var(--matrix-card-w), calc(100% - 2px));
   aspect-ratio: 2 / 3;
   border-radius: 7px;
-  border: 2px dashed rgba(196, 176, 145, 0.7);
-  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid transparent;
+  background: transparent;
 }
 
 .matrix-stack {
@@ -491,7 +475,7 @@ button.ghost:hover {
   gap: var(--matrix-gap);
   margin-top: 8px;
   padding: 8px 0 0;
-  border-top: 2px dashed rgba(188, 168, 137, 0.85);
+  border-top: 1px solid rgba(188, 168, 137, 0.55);
 }
 
 .joker-label {

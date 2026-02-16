@@ -64,15 +64,22 @@
 }
 
 .playing-card.joker {
-  color: #f4c44f;
-  border-color: #3f5268;
-  background: linear-gradient(160deg, #213246, #3d5067);
+  border-color: #d4c6b2;
+  background: linear-gradient(165deg, #ffffff, #f6f3ed);
 }
 
 .playing-card.joker.selected {
-  border-color: #f4c44f;
-  box-shadow: 0 10px 24px rgba(51, 67, 89, 0.4);
-  background: linear-gradient(160deg, #172638, #2f4258);
+  border-color: #2f5f7b;
+  box-shadow: 0 10px 22px rgba(23, 56, 76, 0.32);
+  background: linear-gradient(165deg, #fbfdff, #e9f3ff);
+}
+
+.playing-card.joker-big {
+  color: #c62828;
+}
+
+.playing-card.joker-small {
+  color: #1f1f1f;
 }
 
 .card-tl,
@@ -108,8 +115,13 @@
 }
 
 .playing-card.joker .card-center {
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.playing-card.joker .card-suit-small {
+  display: none;
 }
 
 @media (max-width: 640px) {

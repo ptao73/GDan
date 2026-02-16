@@ -5,17 +5,21 @@ import './PlayingCard.css';
 export default function PlayingCard({ card, isSelected, onClick, disabled }) {
   const isRed = card.suit === 'H' || card.suit === 'D';
   const isJoker = card.rank === 'SJ' || card.rank === 'BJ';
+  const isBigJoker = card.rank === 'BJ';
 
   // 牌面显示内容
-  const displayRank = isJoker ? (card.rank === 'BJ' ? '大' : '小') : card.rank;
-  const displaySuit = isJoker ? '王' : suitLabel(card.suit);
-  const centerText = isJoker ? (card.rank === 'BJ' ? '大王' : '小王') : suitLabel(card.suit);
+  const displayRank = isJoker ? 'J' : card.rank;
+  const displaySuit = isJoker ? '' : suitLabel(card.suit);
+  const centerText = isJoker ? 'Joke' : suitLabel(card.suit);
 
   let cls = 'playing-card';
   if (isSelected) cls += ' selected';
   if (isRed && !isJoker) cls += ' red';
   if (card.isWildcard) cls += ' wild';
-  if (isJoker) cls += ' joker';
+  if (isJoker) {
+    cls += ' joker';
+    cls += isBigJoker ? ' joker-big' : ' joker-small';
+  }
 
   return (
     <button className={cls} onClick={onClick} disabled={disabled}>
