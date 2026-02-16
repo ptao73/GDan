@@ -103,7 +103,13 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  filter: drop-shadow(0 3px 9px rgba(255, 184, 82, 0.38));
+  mix-blend-mode: multiply;
+  filter:
+    brightness(1.12)
+    saturate(1.2)
+    drop-shadow(0 2px 8px rgba(255, 184, 82, 0.28));
+  -webkit-mask-image: radial-gradient(circle, #000 66%, rgba(0, 0, 0, 0.92) 82%, transparent 100%);
+  mask-image: radial-gradient(circle, #000 66%, rgba(0, 0, 0, 0.92) 82%, transparent 100%);
 }
 
 .hero h1 {
@@ -171,8 +177,15 @@
   object-fit: contain;
   z-index: 1;
   pointer-events: none;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.24));
-  opacity: 0.95;
+  mix-blend-mode: multiply;
+  opacity: 0.9;
+  filter:
+    saturate(1.12)
+    contrast(1.06)
+    brightness(0.97)
+    drop-shadow(0 2px 8px rgba(50, 8, 6, 0.2));
+  -webkit-mask-image: radial-gradient(circle, #000 62%, rgba(0, 0, 0, 0.9) 80%, transparent 100%);
+  mask-image: radial-gradient(circle, #000 62%, rgba(0, 0, 0, 0.9) 80%, transparent 100%);
 }
 
 .dragon-left-img {
