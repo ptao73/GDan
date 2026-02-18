@@ -20,17 +20,29 @@
 
 * {
   box-sizing: border-box;
+  /* iPhone: 禁止长按弹出「拷贝/查询」菜单 */
+  -webkit-touch-callout: none;
+  /* iPhone: 禁止打牌时误选中文字 */
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 html {
   min-height: 100%;
   background: var(--bg-canvas);
+  /* iPhone: 禁止弹性滚动（下拉/上拉反弹） */
+  overscroll-behavior: none;
+  /* iPhone: 全局消除 300ms 点击延迟 */
+  touch-action: manipulation;
 }
 
 body {
   margin: 0;
   min-height: 100svh;
   min-height: 100dvh;
+  /* iPhone: 防止下拉刷新和弹性回弹 */
+  overscroll-behavior: none;
+  overflow-x: hidden;
   color: var(--ink-main);
   font-family: 'STKaiti', 'Kaiti SC', 'Songti SC', 'Noto Serif SC', serif;
   line-height: 1.4;
@@ -56,6 +68,10 @@ input,
 select,
 textarea {
   font: inherit;
+  /* 输入框需要保留文字选择能力 */
+  -webkit-user-select: text;
+  user-select: text;
+  -webkit-touch-callout: default;
 }
 
 #root {
