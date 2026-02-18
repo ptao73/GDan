@@ -1,4 +1,5 @@
 import { isWildcardCard, rankValue } from './cards.js';
+import { isFireCombo } from './combos.js';
 
 const BASIC_TYPES = new Set(['single', 'pair', 'triple', 'straight', 'threeWithPair']);
 const ENHANCED_TYPES = new Set(['wood', 'steel']);
@@ -52,29 +53,74 @@ function fireScore(combo) {
   return 0;
 }
 
+// 1C: 扩展控牌加分 — 单张 + 大对子均有加分
 function keyCardScore(combo, trumpRank) {
-  if (combo.type !== 'single') {
+  if (combo.type === 'single') {
+    const card = combo.cards[0];
+    if (!card) return 0;
+    if (card.rank === 'BJ') return 3;
+    if (card.rank === 'SJ') return 2;
+    if (isWildcardCard(card, trumpRank)) return 2;
     return 0;
   }
 
-  const card = combo.cards[0];
-  if (!card) {
+  if (combo.type === 'pair') {
+    const rank = combo.mainRank;
+    if (rank === 'A') return 2;
+    if (rank === 'K') return 1;
+    if (rank === trumpRank) return 1;
     return 0;
-  }
-
-  if (card.rank === 'BJ') {
-    return 3;
-  }
-
-  if (card.rank === 'SJ') {
-    return 2;
-  }
-
-  if (isWildcardCard(card, trumpRank)) {
-    return 2;
   }
 
   return 0;
+}
+
+// 1A: 百搭牌边际效用惩罚 — 百搭用在低牌对子/顺子上扣分（浪费），用在炸弹或作为控牌单张不扣分
+export function wildcardUtilityPenalty(combo, trumpRank) {
+  if (!combo.cards || combo.cards.length === 0) return 0;
+
+  // 炸弹/同花顺/天王 — 百搭用得其所，不扣分
+  if (isFireCombo(combo.type)) return 0;
+
+  // 单张百搭 — 作为控牌使用，不扣分
+  if (combo.type === 'single') return 0;
+
+  // 统计组合中百搭牌数量
+  let wildcardCount = 0;
+  for (const card of combo.cards) {
+    if (isWildcardCard(card, trumpRank)) {
+      wildcardCount += 1;
+    }
+  }
+  if (wildcardCount === 0) return 0;
+
+  // 百搭用在低牌组合上扣分
+  const rv = rankValue(combo.mainRank || '2');
+  if (rv >= 11) return 0; // J 及以上不扣分
+
+  // 低牌组合: 每张百搭扣 2 分; 中等牌: 扣 1 分
+  const penaltyPerCard = rv <= 7 ? 2 : 1;
+  return wildcardCount * penaltyPerCard;
+}
+
+// 1B: 孤立弱牌惩罚 — 低于 8 的非控牌单张每张 -1
+export function isolationPenalty(combos, trumpRank) {
+  let penalty = 0;
+  for (const combo of combos) {
+    if (combo.type !== 'single') continue;
+    const card = combo.cards[0];
+    if (!card) continue;
+    // 控牌（大小王、百搭）不算孤立弱牌
+    if (card.rank === 'BJ' || card.rank === 'SJ') continue;
+    if (isWildcardCard(card, trumpRank)) continue;
+    if (card.rank === trumpRank) continue;
+    // 低于 8 的牌
+    const rv = rankValue(card.rank);
+    if (rv < 8) {
+      penalty += 1;
+    }
+  }
+  return penalty;
 }
 
 export function roundCorrection(handCount) {
@@ -100,16 +146,19 @@ export function scoreComboNoRound(combo, trumpRank) {
 
   const burstScore = fireScore(combo);
   const keyScore = keyCardScore(combo, trumpRank);
+  // 1A: 百搭效用惩罚
+  const wcPenalty = wildcardUtilityPenalty(combo, trumpRank);
 
   return {
     shapeScore,
     burstScore,
     keyScore,
-    total: shapeScore + burstScore + keyScore
+    total: shapeScore + burstScore + keyScore - wcPenalty
   };
 }
 
-export function scoreScheme(combos, trumpRank) {
+// 1D: 策略参数 — 'balanced'(默认) / 'ceiling'(高上限) / 'control'(高控制)
+export function scoreScheme(combos, trumpRank, strategy = 'balanced') {
   let shapeScore = 0;
   let burstScore = 0;
   let keyScore = 0;
@@ -132,8 +181,33 @@ export function scoreScheme(combos, trumpRank) {
 
   const handCount = combos.length;
   const roundScore = roundCorrection(handCount);
+  const isoP = isolationPenalty(combos, trumpRank);
 
-  const total = shapeScore + burstScore + keyScore + roundScore;
+  // 策略权重调整
+  let burstWeight = 1;
+  let keyWeight = 1;
+  let handBonus = 0;
+
+  if (strategy === 'ceiling') {
+    // 高上限模式：火力分权重加倍
+    burstWeight = 2;
+  } else if (strategy === 'control') {
+    // 高控制模式：控牌分权重加倍 + 少手数额外加分
+    keyWeight = 2;
+    if (handCount <= 7) {
+      handBonus = 2;
+    } else if (handCount <= 9) {
+      handBonus = 1;
+    }
+  }
+
+  const total =
+    shapeScore +
+    burstScore * burstWeight +
+    keyScore * keyWeight +
+    roundScore +
+    handBonus -
+    isoP;
 
   return {
     total,
@@ -142,7 +216,9 @@ export function scoreScheme(combos, trumpRank) {
       burstScore,
       keyScore,
       roundScore,
-      handCount
+      handCount,
+      isolationPenalty: isoP,
+      strategy
     },
     comboBreakdown
   };

@@ -49,6 +49,16 @@ function altSummary(item, index) {
   return `备选${index + 1}：总分 ${score}，手数 ${hands}，拆炸弹代价 ${splitBombCards}`;
 }
 
+// 4D: 双策略摘要
+function strategySummary(result, label) {
+  if (!result) return null;
+  const hands = result.detail?.handCount ?? '--';
+  const score = result.score ?? '--';
+  const burst = result.detail?.burstScore ?? 0;
+  const key = result.detail?.keyScore ?? 0;
+  return `${label}：总分 ${score}，手数 ${hands}，火力 ${burst}，控牌 ${key}`;
+}
+
 export default function AiResult({
   aiResult,
   aiStatus,
@@ -109,6 +119,19 @@ export default function AiResult({
                         <span>{altSummary(item, index)}</span>
                       </li>
                     ))}
+                  </ul>
+                </details>
+              ) : null}
+              {aiResult.dualResult ? (
+                <details className="hint">
+                  <summary>查看双策略对比</summary>
+                  <ul className="combo-list ai-list">
+                    <li className="added">
+                      <span>{strategySummary(aiResult.dualResult.ceiling, '高上限方案')}</span>
+                    </li>
+                    <li className="same">
+                      <span>{strategySummary(aiResult.dualResult.control, '高控制方案')}</span>
+                    </li>
                   </ul>
                 </details>
               ) : null}

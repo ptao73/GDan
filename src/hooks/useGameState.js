@@ -6,7 +6,7 @@ import {
   detectComboTypes
 } from '../engine/combos.js';
 import { scoreScheme } from '../engine/scoring.js';
-import { compareSchemeResult, solveBestScheme } from '../engine/solver.js';
+import { compareSchemeResult, solveBestScheme, solveDualRecommendation } from '../engine/solver.js';
 import { DataService } from '../services/dataService.js';
 import { useWorker } from './useWorker.js';
 
@@ -283,18 +283,20 @@ export function useGameState() {
   }
 
   async function runSingleProfileSearch(cards, rank, profile, options = {}) {
+    const dualMode = Boolean(options.dualMode);
     const solverOptions = {
       timeLimitMs: profile.timeLimitMs,
       maxBranch: profile.maxBranch,
       topK: 3,
       targetScore: options.targetScore,
-      stopAfterSurpass: options.stopAfterSurpass
+      stopAfterSurpass: options.stopAfterSurpass,
+      dualMode
     };
 
     if (profile.mode === 'worker') {
       try {
         const result = await runAiSearchWithWorker(cards, rank, solverOptions);
-        return { result, usedFallback: false };
+        return { result, usedFallback: false, dualMode };
       } catch (error) {
         const message = error instanceof Error ? error.message : '';
         if (
@@ -305,17 +307,33 @@ export function useGameState() {
         ) {
           throw error;
         }
+        if (dualMode) {
+          const fallback = solveDualRecommendation(cards, rank, {
+            ...solverOptions,
+            timeLimitMs: Math.max(2200, profile.timeLimitMs - 400)
+          });
+          return { result: fallback, usedFallback: true, dualMode };
+        }
         const fallback = solveBestScheme(cards, rank, {
           ...solverOptions,
           timeLimitMs: Math.max(2200, profile.timeLimitMs - 400)
         });
-        return { result: fallback, usedFallback: true };
+        return { result: fallback, usedFallback: true, dualMode: false };
       }
+    }
+
+    if (dualMode) {
+      return {
+        result: solveDualRecommendation(cards, rank, solverOptions),
+        usedFallback: false,
+        dualMode
+      };
     }
 
     return {
       result: solveBestScheme(cards, rank, solverOptions),
-      usedFallback: false
+      usedFallback: false,
+      dualMode: false
     };
   }
 
@@ -327,9 +345,11 @@ export function useGameState() {
     targetScore,
     stopAfterSurpass,
     initialBest,
-    initialAttempts
+    initialAttempts,
+    dualMode
   }) {
     let bestResult = initialBest || null;
+    let dualResult = null;
     let usedFallback = false;
     let attemptCount = initialAttempts || 0;
     let surpassedTarget =
@@ -339,13 +359,14 @@ export function useGameState() {
 
     for (const profile of profiles) {
       attemptCount += 1;
-      const { result, usedFallback: profileFallback } = await runSingleProfileSearch(
+      const { result, usedFallback: profileFallback, dualMode: isDual } = await runSingleProfileSearch(
         cards,
         rank,
         profile,
         {
           targetScore,
-          stopAfterSurpass
+          stopAfterSurpass,
+          dualMode
         }
       );
 
@@ -353,14 +374,30 @@ export function useGameState() {
         usedFallback = true;
       }
 
-      if (!bestResult || isBetterResult(result, bestResult)) {
-        bestResult = result;
-      }
+      if (isDual && result.ceiling && result.control) {
+        // 双策略结果 — 取两者中的最佳作为 bestResult
+        dualResult = result;
+        const better = isBetterResult(result.ceiling, result.control)
+          ? result.ceiling
+          : result.control;
+        if (!bestResult || isBetterResult(better, bestResult)) {
+          bestResult = better;
+        }
 
-      if (typeof targetScore === 'number' && result.score > targetScore) {
-        surpassedTarget = true;
-        if (stopAfterSurpass) {
-          break;
+        if (typeof targetScore === 'number') {
+          if (result.ceiling.score > targetScore || result.control.score > targetScore) {
+            surpassedTarget = true;
+            if (stopAfterSurpass) break;
+          }
+        }
+      } else {
+        if (!bestResult || isBetterResult(result, bestResult)) {
+          bestResult = result;
+        }
+
+        if (typeof targetScore === 'number' && result.score > targetScore) {
+          surpassedTarget = true;
+          if (stopAfterSurpass) break;
         }
       }
     }
@@ -379,7 +416,8 @@ export function useGameState() {
         surpassedUser:
           typeof targetScore === 'number' ? resolvedBest.score > targetScore : false,
         searchMode: modeKey,
-        searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced
+        searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced,
+        dualResult
       },
       usedFallback,
       surpassedTarget
@@ -415,7 +453,8 @@ export function useGameState() {
       targetScore: null,
       stopAfterSurpass: false,
       initialBest: null,
-      initialAttempts: 0
+      initialAttempts: 0,
+      dualMode: true
     });
 
     precomputeRef.current = {
@@ -626,7 +665,8 @@ export function useGameState() {
       targetScore,
       stopAfterSurpass: true,
       initialBest: null,
-      initialAttempts: 0
+      initialAttempts: 0,
+      dualMode: true
     });
 
     if (phaseOne.surpassedTarget || phaseTwoProfiles.length === 0) {
@@ -647,7 +687,8 @@ export function useGameState() {
       targetScore,
       stopAfterSurpass: false,
       initialBest: phaseOne.ai,
-      initialAttempts: phaseOne.ai.searchAttempts || 0
+      initialAttempts: phaseOne.ai.searchAttempts || 0,
+      dualMode: true
     });
 
     return {

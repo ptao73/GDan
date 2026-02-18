@@ -1,6 +1,6 @@
-import { cardSortValue, isJoker, isWildcardCard, STANDARD_RANKS } from './cards.js';
+import { cardSortValue, isJoker, isWildcardCard, rankValue, STANDARD_RANKS } from './cards.js';
 import { COMBO_LABELS, comboPriority, detectComboTypes, isFireCombo } from './combos.js';
-import { roundCorrection, scoreComboNoRound, scoreScheme } from './scoring.js';
+import { roundCorrection, scoreComboNoRound, scoreScheme, wildcardUtilityPenalty } from './scoring.js';
 
 const MAX_COMBO_SIZE = 8;
 const DEFAULT_TIME_LIMIT = 3000;
@@ -212,9 +212,11 @@ function splitBombPenalty(combo, bombProtection) {
   return involved * BOMB_SPLIT_PENALTY_PER_CARD;
 }
 
-function candidateEstimate(combo, component, bombProtection) {
+// 3D: 改进 candidateEstimate — 加入百搭效用惩罚因子
+function candidateEstimate(combo, component, bombProtection, trumpRank) {
   const splitPenalty = splitBombPenalty(combo, bombProtection);
-  return component.total * 8 + combo.cards.length * 2 + comboPriority(combo.type) - splitPenalty;
+  const wcPenalty = trumpRank ? wildcardUtilityPenalty(combo, trumpRank) : 0;
+  return component.total * 8 + combo.cards.length * 2 + comboPriority(combo.type) - splitPenalty - wcPenalty * 4;
 }
 
 function generateCandidates(remaining, trumpRank, maxBranch, bombProtection) {
@@ -241,7 +243,7 @@ function generateCandidates(remaining, trumpRank, maxBranch, bombProtection) {
 
         seen.add(key);
         const component = scoreComboNoRound(combo, trumpRank);
-        const estimate = candidateEstimate(combo, component, bombProtection);
+        const estimate = candidateEstimate(combo, component, bombProtection, trumpRank);
 
         candidates.push({
           ...combo,
@@ -278,7 +280,7 @@ function generateCandidates(remaining, trumpRank, maxBranch, bombProtection) {
       {
         ...fallback,
         component,
-        estimate: candidateEstimate(fallback, component, bombProtection)
+        estimate: candidateEstimate(fallback, component, bombProtection, trumpRank)
       }
     ];
   }
@@ -306,10 +308,6 @@ function greedyBaseline(cards, trumpRank, maxBranch, bombProtection) {
   };
 }
 
-function stateKey(remaining, comboCount) {
-  return `${comboCount}|${remaining.map((card) => card.id).join('.')}`;
-}
-
 function theoreticalUpperBound(partialScore, remainCount, minHandsPossible) {
   let roundUpper = 0;
   if (minHandsPossible <= 8) {
@@ -318,6 +316,45 @@ function theoreticalUpperBound(partialScore, remainCount, minHandsPossible) {
     roundUpper = roundCorrection(minHandsPossible);
   }
   return partialScore + remainCount * 4 + roundUpper + 12;
+}
+
+// 3A: 剩余牌质量快速估算
+function remainingQualityEstimate(remaining, trumpRank) {
+  if (remaining.length === 0) return 0;
+
+  const rankCounts = new Map();
+  let controlBonus = 0;
+
+  for (const card of remaining) {
+    const rank = card.rank;
+    rankCounts.set(rank, (rankCounts.get(rank) || 0) + 1);
+
+    // 控牌加分
+    if (rank === 'BJ') controlBonus += 3;
+    else if (rank === 'SJ') controlBonus += 2;
+    else if (isWildcardCard(card, trumpRank)) controlBonus += 2;
+    else if (rank === 'A') controlBonus += 1;
+  }
+
+  let structureBonus = 0;
+  let isolatedLow = 0;
+
+  for (const [rank, count] of rankCounts.entries()) {
+    if (count >= 4) {
+      structureBonus += 8; // 炸弹潜力
+    } else if (count === 3) {
+      structureBonus += 3;
+    } else if (count === 2) {
+      structureBonus += 1;
+    } else if (count === 1) {
+      const rv = rankValue(rank);
+      if (rv < 8 && rank !== 'BJ' && rank !== 'SJ') {
+        isolatedLow += 1;
+      }
+    }
+  }
+
+  return structureBonus + controlBonus - isolatedLow;
 }
 
 function countSplitBombCards(combos, bombProtection) {
@@ -348,8 +385,8 @@ function countSplitBombCards(combos, bombProtection) {
   };
 }
 
-function buildSchemeResult(combos, trumpRank, bombProtection) {
-  const scored = scoreScheme(combos, trumpRank);
+function buildSchemeResult(combos, trumpRank, bombProtection, strategy) {
+  const scored = scoreScheme(combos, trumpRank, strategy);
   const protectionView = countSplitBombCards(combos, bombProtection);
 
   return {
@@ -460,6 +497,101 @@ function pushTopResult(topResults, topSeen, candidate, topK) {
   }
 }
 
+// 3B: 波束搜索实现 — 维护 beamWidth 个最优部分解，逐层展开
+function beamSearch(sorted, trumpRank, bombProtection, options) {
+  const maxBranch = options.maxBranch || DEFAULT_MAX_BRANCH;
+  const beamWidth = options.beamWidth || Math.max(8, Math.floor(maxBranch * 0.6));
+  const deadline = options.deadline;
+  const strategy = options.strategy || 'balanced';
+
+  // 每个 beam state: { combos, remaining, partialScore }
+  let beam = [
+    {
+      combos: [],
+      remaining: sorted,
+      partialScore: 0
+    }
+  ];
+
+  let searchNodes = 0;
+  let timedOut = false;
+
+  while (beam.length > 0) {
+    if (deadline && nowMs() > deadline) {
+      timedOut = true;
+      break;
+    }
+
+    // 找到还有剩余牌的 state
+    const activeBeam = beam.filter((state) => state.remaining.length > 0);
+    const completedBeam = beam.filter((state) => state.remaining.length === 0);
+
+    if (activeBeam.length === 0) {
+      beam = completedBeam;
+      break;
+    }
+
+    const nextCandidates = [];
+
+    for (const state of activeBeam) {
+      if (deadline && nowMs() > deadline) {
+        timedOut = true;
+        // 将未完成的状态也保留，用贪心补全
+        nextCandidates.push(state);
+        continue;
+      }
+
+      searchNodes += 1;
+      const candidates = generateCandidates(state.remaining, trumpRank, maxBranch, bombProtection);
+
+      // 只展开 top 几个候选（限制分支宽度）
+      const expandLimit = Math.min(candidates.length, Math.max(3, Math.ceil(beamWidth / 2)));
+      for (let i = 0; i < expandLimit; i += 1) {
+        const candidate = candidates[i];
+        const nextRemaining = removeCards(state.remaining, candidate.cards);
+        const nextPartial = state.partialScore + candidate.component.total;
+        // 快速估算剩余质量用于排序
+        const quality = remainingQualityEstimate(nextRemaining, trumpRank);
+
+        nextCandidates.push({
+          combos: [...state.combos, cloneCombo(candidate)],
+          remaining: nextRemaining,
+          partialScore: nextPartial,
+          // 综合评估分: 部分得分 + 剩余质量估算 + 轮次修正预估
+          beamScore: nextPartial + quality * 0.5 + roundCorrection(
+            state.combos.length + 1 + Math.ceil(nextRemaining.length / 4)
+          ) * 0.3
+        });
+      }
+    }
+
+    if (timedOut) {
+      // 合并已完成和未完成的
+      beam = [...completedBeam, ...nextCandidates];
+      break;
+    }
+
+    // 保留 top beamWidth 个 + 已完成的
+    nextCandidates.sort((a, b) => (b.beamScore || 0) - (a.beamScore || 0));
+    beam = [...completedBeam, ...nextCandidates.slice(0, beamWidth)];
+  }
+
+  // 对未完成的状态用贪心补全
+  const results = [];
+  for (const state of beam) {
+    let finalCombos = state.combos;
+    if (state.remaining.length > 0) {
+      const greedy = greedyBaseline(state.remaining, trumpRank, maxBranch, bombProtection);
+      finalCombos = [...state.combos, ...greedy.combos];
+    }
+    const result = buildSchemeResult(finalCombos, trumpRank, bombProtection, strategy);
+    results.push(result);
+  }
+
+  return { results, searchNodes, timedOut };
+}
+
+// 3C: 整合波束搜索到 solveBestScheme
 export function solveBestScheme(cards, trumpRank, options = {}) {
   const startAt = nowMs();
   const timeLimitMs = options.timeLimitMs ?? DEFAULT_TIME_LIMIT;
@@ -469,6 +601,8 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
     typeof options.targetScore === 'number' ? options.targetScore : null;
   const stopAfterSurpass =
     Boolean(options.stopAfterSurpass) && targetScore !== null;
+  const strategy = options.strategy || 'balanced';
+  const beamWidth = options.beamWidth || Math.max(8, Math.floor(maxBranch * 0.6));
   const deadline = startAt + timeLimitMs;
 
   const sorted = [...cards].sort((a, b) => cardSortValue(a, trumpRank) - cardSortValue(b, trumpRank));
@@ -501,84 +635,37 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
   }
 
   const bombProtection = buildBombProtection(sorted);
+
+  // 贪心基线作为初始上界
   const baseline = greedyBaseline(sorted, trumpRank, maxBranch, bombProtection);
   const topSeen = new Set();
   const topResults = [];
-  const baselineResult = buildSchemeResult(baseline.combos, trumpRank, bombProtection);
+  const baselineResult = buildSchemeResult(baseline.combos, trumpRank, bombProtection, strategy);
   pushTopResult(topResults, topSeen, baselineResult, topK);
 
   let timedOut = false;
-  let stoppedAfterTarget = false;
   let surpassedTarget = targetScore !== null && baselineResult.score > targetScore;
   let searchNodes = 0;
 
-  const memo = new Map();
-  const current = [];
+  // 波束搜索
+  if (!surpassedTarget || !stopAfterSurpass) {
+    const beamResult = beamSearch(sorted, trumpRank, bombProtection, {
+      maxBranch,
+      beamWidth,
+      deadline,
+      strategy
+    });
 
-  const dfs = (remaining, partialScore) => {
-    if (stoppedAfterTarget || timedOut) {
-      return;
-    }
-    searchNodes += 1;
+    searchNodes += beamResult.searchNodes;
+    timedOut = beamResult.timedOut;
 
-    if (nowMs() > deadline) {
-      timedOut = true;
-      return;
-    }
-
-    if (remaining.length === 0) {
-      const evaluated = buildSchemeResult(current, trumpRank, bombProtection);
-      pushTopResult(topResults, topSeen, evaluated, topK);
-
-      if (targetScore !== null && evaluated.score > targetScore) {
+    for (const result of beamResult.results) {
+      pushTopResult(topResults, topSeen, result, topK);
+      if (targetScore !== null && result.score > targetScore) {
         surpassedTarget = true;
-        if (stopAfterSurpass) {
-          stoppedAfterTarget = true;
-        }
-      }
-      return;
-    }
-
-    const bestResult = topResults[0] || baselineResult;
-    const minHandsPossible = current.length + Math.ceil(remaining.length / MAX_COMBO_SIZE);
-    if (bestResult && minHandsPossible > bestResult.detail.handCount) {
-      return;
-    }
-
-    const optimistic = theoreticalUpperBound(partialScore, remaining.length, minHandsPossible);
-    if (bestResult && minHandsPossible === bestResult.detail.handCount && optimistic < bestResult.score) {
-      return;
-    }
-
-    const key = stateKey(remaining, current.length);
-    const seen = memo.get(key);
-    if (seen !== undefined && seen >= partialScore) {
-      return;
-    }
-    memo.set(key, partialScore);
-
-    const candidates = generateCandidates(remaining, trumpRank, maxBranch, bombProtection);
-    for (const candidate of candidates) {
-      if (stoppedAfterTarget || timedOut) {
-        return;
-      }
-      if (nowMs() > deadline) {
-        timedOut = true;
-        return;
-      }
-
-      const nextRemaining = removeCards(remaining, candidate.cards);
-      current.push(cloneCombo(candidate));
-      dfs(nextRemaining, partialScore + candidate.component.total);
-      current.pop();
-
-      if (timedOut || stoppedAfterTarget) {
-        return;
       }
     }
-  };
-
-  dfs(sorted, 0);
+  }
 
   const elapsedMs = Math.round(nowMs() - startAt);
   const finalTop = topResults.length > 0 ? topResults : [baselineResult];
@@ -589,15 +676,38 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
     ...best,
     timedOut,
     elapsedMs,
-    exact: !timedOut && !stoppedAfterTarget,
+    exact: !timedOut,
     stopReason: timedOut
       ? 'timeout'
-      : stoppedAfterTarget
+      : surpassedTarget
       ? 'target-surpassed'
       : 'completed',
     surpassedTarget,
     searchNodes,
     topResults: publicTop,
     alternatives: publicTop.slice(1)
+  };
+}
+
+// 4A: 双策略推荐 — 分别用 ceiling 和 control 策略各跑一次
+export function solveDualRecommendation(cards, trumpRank, options = {}) {
+  const timeLimitMs = options.timeLimitMs ?? DEFAULT_TIME_LIMIT;
+  const halfTime = Math.floor(timeLimitMs / 2);
+
+  const ceilingResult = solveBestScheme(cards, trumpRank, {
+    ...options,
+    timeLimitMs: halfTime,
+    strategy: 'ceiling'
+  });
+
+  const controlResult = solveBestScheme(cards, trumpRank, {
+    ...options,
+    timeLimitMs: halfTime,
+    strategy: 'control'
+  });
+
+  return {
+    ceiling: ceilingResult,
+    control: controlResult
   };
 }

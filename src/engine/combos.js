@@ -41,18 +41,51 @@ const COMBO_PRIORITY = {
 };
 
 const LINEAR_RANKS = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+// 2A: 为每个 rank 分配一个 bit 位置 (0~13)，用于位掩码快速匹配
+const RANK_BIT_INDEX = {};
+for (let i = 0; i < LINEAR_RANKS.length; i += 1) {
+  // A 出现两次 (index 0 和 13)，取较高位
+  RANK_BIT_INDEX[LINEAR_RANKS[i]] = i;
+}
+// A 同时在位置 0 和 13，用 index 0 和 13 都映射
+// 这里选择保留最后一次赋值(13)，但 A 在 candidate 里会通过 candidateMask 正确处理
+
+function buildSequenceCandidates(length) {
+  const list = [];
+  for (let i = 0; i <= LINEAR_RANKS.length - length; i += 1) {
+    const ranks = LINEAR_RANKS.slice(i, i + length);
+    // 2A: 预计算 bitmask — 每个 candidate 的所需 rank 位集合
+    let mask = 0;
+    for (let j = 0; j < ranks.length; j += 1) {
+      mask |= 1 << (i + j);
+    }
+    list.push({ ranks, mask });
+  }
+  return list;
+}
+
 const STRAIGHT_CANDIDATES = buildSequenceCandidates(5);
 const WOOD_CANDIDATES = buildSequenceCandidates(3);
 const STEEL_CANDIDATES = buildSequenceCandidates(2);
 
 const JOKER_RANKS = new Set(['SJ', 'BJ']);
 
-function buildSequenceCandidates(length) {
-  const list = [];
-  for (let i = 0; i <= LINEAR_RANKS.length - length; i += 1) {
-    list.push(LINEAR_RANKS.slice(i, i + length));
+// 2B: 快速统计函数 — 用 Uint8Array 做 rank 计数，同时生成 presence mask
+function rankPresenceMask(cards) {
+  const counts = new Uint8Array(14); // 对应 LINEAR_RANKS 14 个位置
+  let mask = 0;
+  for (const card of cards) {
+    const rank = card.rank;
+    // 找到 rank 在 LINEAR_RANKS 中的位置
+    for (let i = 0; i < LINEAR_RANKS.length; i += 1) {
+      if (LINEAR_RANKS[i] === rank) {
+        counts[i] += 1;
+        mask |= 1 << i;
+      }
+    }
   }
-  return list;
+  return { mask, counts };
 }
 
 function isJokerRank(rank) {
@@ -151,40 +184,71 @@ function matchNOfKind(cards, size, trumpRank) {
   return [];
 }
 
-function matchSequencePattern(fixedCards, wildcardCount, candidate, copiesPerRank) {
+// 2C: 加速版 matchSequencePattern — 用 bitmask AND 做快速排除
+function matchSequencePattern(fixedCards, wildcardCount, candidate, copiesPerRank, fixedMask, fixedCounts) {
+  const { ranks, mask: candidateMask } = candidate;
+
+  // 快速排除：如果 fixed 牌中有 candidate 不覆盖的 rank，直接失败
+  if (fixedMask !== undefined && (fixedMask & ~candidateMask) !== 0) {
+    return false;
+  }
+
+  // 精确检查: 使用预计算的 counts（如果有）或回退到 countByRank
+  if (fixedCounts) {
+    let missing = 0;
+    for (let i = 0; i < LINEAR_RANKS.length; i += 1) {
+      if ((candidateMask & (1 << i)) === 0) {
+        // 这个位置不在 candidate 中，如果 fixed 有这个 rank 就失败
+        if (fixedCounts[i] > 0) return false;
+      }
+    }
+    // 统计各 candidate rank 的缺口
+    for (let j = 0; j < ranks.length; j += 1) {
+      // 找到这个 rank 对应的 bit 位置
+      const rank = ranks[j];
+      let bestCount = 0;
+      for (let i = 0; i < LINEAR_RANKS.length; i += 1) {
+        if (LINEAR_RANKS[i] === rank && (candidateMask & (1 << i)) !== 0) {
+          bestCount = Math.max(bestCount, fixedCounts[i]);
+        }
+      }
+      if (bestCount > copiesPerRank) return false;
+      missing += Math.max(0, copiesPerRank - bestCount);
+    }
+    return missing <= wildcardCount;
+  }
+
+  // 回退路径：无预计算数据时使用原逻辑
   const rankCounts = countByRank(fixedCards);
-  const required = new Set(candidate);
+  const required = new Set(ranks);
 
   for (const [rank, count] of rankCounts.entries()) {
-    if (!required.has(rank)) {
-      return false;
-    }
-    if (count > copiesPerRank) {
-      return false;
-    }
+    if (!required.has(rank)) return false;
+    if (count > copiesPerRank) return false;
   }
 
   let missing = 0;
-  for (const rank of candidate) {
+  for (const rank of ranks) {
     const used = rankCounts.get(rank) || 0;
     missing += Math.max(0, copiesPerRank - used);
   }
-
   return missing <= wildcardCount;
 }
 
+// 2D: 更新 matchStraight/matchWood/matchSteel 使用新版 candidate 格式和预计算 mask
 function matchStraight(cards, trumpRank) {
   if (cards.length !== 5) return [];
 
   const { wildcards, jokers, fixedNoJoker } = splitCards(cards, trumpRank);
   if (jokers.length > 0) return [];
 
+  const { mask: fixedMask, counts: fixedCounts } = rankPresenceMask(fixedNoJoker);
   const matched = [];
   for (const candidate of STRAIGHT_CANDIDATES) {
-    if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 1)) {
+    if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 1, fixedMask, fixedCounts)) {
       matched.push({
-        mainRank: candidate[candidate.length - 1],
-        sequence: candidate
+        mainRank: candidate.ranks[candidate.ranks.length - 1],
+        sequence: candidate.ranks
       });
     }
   }
@@ -198,12 +262,13 @@ function matchWood(cards, trumpRank) {
   const { wildcards, jokers, fixedNoJoker } = splitCards(cards, trumpRank);
   if (jokers.length > 0) return [];
 
+  const { mask: fixedMask, counts: fixedCounts } = rankPresenceMask(fixedNoJoker);
   const matched = [];
   for (const candidate of WOOD_CANDIDATES) {
-    if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 2)) {
+    if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 2, fixedMask, fixedCounts)) {
       matched.push({
-        mainRank: candidate[candidate.length - 1],
-        sequence: candidate
+        mainRank: candidate.ranks[candidate.ranks.length - 1],
+        sequence: candidate.ranks
       });
     }
   }
@@ -217,12 +282,13 @@ function matchSteel(cards, trumpRank) {
   const { wildcards, jokers, fixedNoJoker } = splitCards(cards, trumpRank);
   if (jokers.length > 0) return [];
 
+  const { mask: fixedMask, counts: fixedCounts } = rankPresenceMask(fixedNoJoker);
   const matched = [];
   for (const candidate of STEEL_CANDIDATES) {
-    if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 3)) {
+    if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 3, fixedMask, fixedCounts)) {
       matched.push({
-        mainRank: candidate[candidate.length - 1],
-        sequence: candidate
+        mainRank: candidate.ranks[candidate.ranks.length - 1],
+        sequence: candidate.ranks
       });
     }
   }
@@ -240,14 +306,15 @@ function matchStraightFlush(cards, trumpRank) {
   if (suitSet.size > 1) return [];
 
   const suitCandidates = suitSet.size === 1 ? [...suitSet] : SUITS;
+  const { mask: fixedMask, counts: fixedCounts } = rankPresenceMask(fixedNoJoker);
   const matched = [];
 
   for (const suit of suitCandidates) {
     for (const candidate of STRAIGHT_CANDIDATES) {
-      if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 1)) {
+      if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 1, fixedMask, fixedCounts)) {
         matched.push({
-          mainRank: candidate[candidate.length - 1],
-          sequence: candidate,
+          mainRank: candidate.ranks[candidate.ranks.length - 1],
+          sequence: candidate.ranks,
           suit
         });
       }
