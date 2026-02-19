@@ -88,6 +88,23 @@ describe('detectComboTypes - 顺子', () => {
     expect(types.some((d) => d.type === 'straight')).toBe(true);
   });
 
+  it('配牌补位的高位 A 顺子：♠J ♠Q ♠K ♠A + 配牌 = 10-J-Q-K-A', () => {
+    // 当前打 J，红心 J 是配牌，应充当 10 组成顺子
+    const cards = makeCards([
+      ['S', 'J'], ['S', 'Q'], ['S', 'K'], ['S', 'A'], ['H', 'J']
+    ], 'J');
+    const types = detectComboTypes(cards, 'J');
+    expect(types.some((d) => d.type === 'straight')).toBe(true);
+  });
+
+  it('配牌补位的低位 A 顺子：♠A ♠2 ♠3 ♠4 + 配牌 = A-2-3-4-5', () => {
+    const cards = makeCards([
+      ['S', 'A'], ['S', '2'], ['S', '3'], ['S', '4'], ['H', 'J']
+    ], 'J');
+    const types = detectComboTypes(cards, 'J');
+    expect(types.some((d) => d.type === 'straight')).toBe(true);
+  });
+
   it('不连续的 5 张不是顺子', () => {
     const cards = makeCards([
       ['S', '3'], ['H', '4'], ['C', '5'], ['D', '6'], ['S', '9']

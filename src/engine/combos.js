@@ -189,8 +189,17 @@ function matchSequencePattern(fixedCards, wildcardCount, candidate, copiesPerRan
   const { ranks, mask: candidateMask } = candidate;
 
   // 快速排除：如果 fixed 牌中有 candidate 不覆盖的 rank，直接失败
-  if (fixedMask !== undefined && (fixedMask & ~candidateMask) !== 0) {
-    return false;
+  // 注意：A 在 LINEAR_RANKS 中占两个位置 (bit 0 和 bit 13)，
+  // 如果 candidate 覆盖了其中一个 A 位，另一个 A 位不应导致排除
+  if (fixedMask !== undefined) {
+    let adjustedFixedMask = fixedMask;
+    const A_LOW = 1 << 0;
+    const A_HIGH = 1 << 13;
+    if (candidateMask & A_HIGH) adjustedFixedMask &= ~A_LOW;
+    if (candidateMask & A_LOW) adjustedFixedMask &= ~A_HIGH;
+    if ((adjustedFixedMask & ~candidateMask) !== 0) {
+      return false;
+    }
   }
 
   // 精确检查: 使用预计算的 counts（如果有）或回退到 countByRank
@@ -199,17 +208,28 @@ function matchSequencePattern(fixedCards, wildcardCount, candidate, copiesPerRan
     for (let i = 0; i < LINEAR_RANKS.length; i += 1) {
       if ((candidateMask & (1 << i)) === 0) {
         // 这个位置不在 candidate 中，如果 fixed 有这个 rank 就失败
-        if (fixedCounts[i] > 0) return false;
+        // 但 A 占两个位置 (0 和 13)，如果另一个 A 位在 candidate 中则跳过
+        if (fixedCounts[i] > 0) {
+          if (LINEAR_RANKS[i] === 'A') {
+            const otherABit = i === 0 ? 13 : 0;
+            if (candidateMask & (1 << otherABit)) continue;
+          }
+          return false;
+        }
       }
     }
     // 统计各 candidate rank 的缺口
+    const countedRanks = new Set();
     for (let j = 0; j < ranks.length; j += 1) {
-      // 找到这个 rank 对应的 bit 位置
       const rank = ranks[j];
+      if (countedRanks.has(rank)) continue;
+      countedRanks.add(rank);
+      // 只统计 candidate 覆盖的位置上的 count
+      // （A 在 index 0 和 13 都出现，但只应取 candidate 对应位的 count）
       let bestCount = 0;
       for (let i = 0; i < LINEAR_RANKS.length; i += 1) {
         if (LINEAR_RANKS[i] === rank && (candidateMask & (1 << i)) !== 0) {
-          bestCount = Math.max(bestCount, fixedCounts[i]);
+          bestCount += fixedCounts[i];
         }
       }
       if (bestCount > copiesPerRank) return false;
