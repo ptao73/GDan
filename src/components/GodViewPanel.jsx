@@ -2,28 +2,10 @@ import { cardLabel } from '../engine/cards.js';
 import { scoreComboNoRound } from '../engine/scoring.js';
 import { comboRankVector, compareComboDisplayOrder } from '../utils/comboDisplay.js';
 
-function comboLabel(combo) {
-  if (!combo) return '';
-  if (combo.sequence) {
-    return `${combo.label}(${combo.sequence.join('-')})`;
-  }
-  if (combo.type === 'threeWithPair') {
-    return `${combo.label}(${combo.tripleRank}带${combo.pairRank})`;
-  }
-  if (combo.mainRank) {
-    return `${combo.label}(${combo.mainRank})`;
-  }
-  return combo.label;
-}
-
 function roleText(role) {
   if (role === 'self') return '我';
   if (role === 'teammate') return '队友';
   return '对手';
-}
-
-function strategyText(key) {
-  return key === 'aggressive' ? '进攻型' : '稳健型';
 }
 
 function optionSummary(option) {
@@ -59,7 +41,7 @@ function buildSeatComboItems(player, trumpRank) {
 
 function comboLineText(item) {
   const cards = (item.combo.cards || []).map((card) => cardLabel(card)).join(' ');
-  return `${comboLabel(item.combo)}（${item.total}分）：${cards}`;
+  return `${item.combo.label}（${item.total}分）：${cards}`;
 }
 
 export default function GodViewPanel({ godViewData, godViewStatus }) {
@@ -109,10 +91,6 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
                 </h3>
                 <span className="god-threat">威胁 {player.threatScore}</span>
               </header>
-              <p className="god-seat-metrics">
-                理论手数 {player.preferred.handCount} | 炸弹 {player.preferred.bombCount} | 控牌{' '}
-                {player.preferred.keyScore} | 推荐{strategyText(player.preferredStrategy)}
-              </p>
               <ul className="combo-list god-seat-combo-list">
                 {seatItems.length === 0 ? (
                   <li className="combo-empty">暂无牌形建议。</li>
