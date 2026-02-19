@@ -15,7 +15,8 @@ export default function CardMatrix({
   selectedIds,
   toggleCard,
   trumpRank,
-  isSolving
+  isSolving,
+  ghostHints = []
 }) {
   const matrix = {};
   const jokerMatrix = { BJ: [], SJ: [] };
@@ -39,6 +40,15 @@ export default function CardMatrix({
     <div className="matrix-board">
       <div className="matrix-meta">
         <h2>手牌区</h2>
+        {ghostHints.length > 0 ? (
+          <div className="ghost-hint-strip" aria-label="对手牌型特征提示">
+            {ghostHints.map((hint) => (
+              <span key={hint.seat} className="ghost-hint-chip">
+                {hint.seatName}家 火{hint.fireCount} 炸{hint.bombCount} 手{hint.hands}
+              </span>
+            ))}
+          </div>
+        ) : null}
       </div>
       <div className="matrix-stage">
         <aside className="matrix-trump-side">

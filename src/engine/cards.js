@@ -1,5 +1,6 @@
 export const STANDARD_RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 export const SUITS = ['S', 'H', 'C', 'D'];
+export const TABLE_SEATS = ['E', 'S', 'W', 'N'];
 
 export const RANK_VALUE = {
   '2': 2,
@@ -103,12 +104,31 @@ export function sortCards(cards, trumpRank) {
 }
 
 export function createDeal() {
+  const table = createTableDeal();
+  const east = table.players.find((player) => player.seat === 'E');
+  return {
+    trumpRank: table.trumpRank,
+    dealtCards: east ? east.cards : []
+  };
+}
+
+export function createTableDeal() {
   const trumpRank = randomTrumpRank();
   const shuffled = shuffleCards(createFullDeck());
-  const dealt = shuffled.slice(0, 27).map((card) => decorateCard(card, trumpRank));
+  const players = TABLE_SEATS.map((seat, index) => {
+    const start = index * 27;
+    const cards = shuffled
+      .slice(start, start + 27)
+      .map((card) => decorateCard(card, trumpRank));
+    return {
+      seat,
+      cards: sortCards(cards, trumpRank)
+    };
+  });
+
   return {
     trumpRank,
-    dealtCards: sortCards(dealt, trumpRank)
+    players
   };
 }
 

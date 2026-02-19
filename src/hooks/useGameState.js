@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createDeal } from '../engine/cards.js';
+import { createTableDeal } from '../engine/cards.js';
 import {
   comboKey,
   createCombo,
@@ -7,6 +7,7 @@ import {
 } from '../engine/combos.js';
 import { scoreScheme } from '../engine/scoring.js';
 import { compareSchemeResult, solveBestScheme, solveDualRecommendation } from '../engine/solver.js';
+import { analyzeGodView } from '../engine/godView.js';
 import { DataService } from '../services/dataService.js';
 import { useWorker } from './useWorker.js';
 
@@ -53,6 +54,16 @@ const AI_SEARCH_PROFILES_BY_MODE = {
     { mode: 'local', timeLimitMs: 13000, maxBranch: 52 }
   ]
 };
+const GOD_VIEW_TIME_LIMIT_MS = {
+  fast: 420,
+  balanced: 650,
+  quality: 920
+};
+const GOD_VIEW_MAX_BRANCH = {
+  fast: 16,
+  balanced: 20,
+  quality: 24
+};
 
 function isIosLikeDevice() {
   if (typeof navigator === 'undefined') return false;
@@ -86,6 +97,21 @@ function buildDealKey(cards, trumpRank) {
   return `${trumpRank}|${cards.map((card) => card.id).join('.')}`;
 }
 
+function buildTableDealKey(tableDeal) {
+  if (!tableDeal?.trumpRank || !Array.isArray(tableDeal.players) || tableDeal.players.length === 0) {
+    return '';
+  }
+
+  const seatOrder = ['E', 'S', 'W', 'N'];
+  const bySeat = new Map(tableDeal.players.map((player) => [player.seat, player.cards || []]));
+  const parts = seatOrder.map((seat) =>
+    (bySeat.get(seat) || [])
+      .map((card) => card.id)
+      .join('.')
+  );
+  return `${tableDeal.trumpRank}|${parts.join('/')}`;
+}
+
 function isBetterResult(next, current) {
   return compareSchemeResult(next, current) < 0;
 }
@@ -103,6 +129,7 @@ export function useGameState() {
   // --- 基本状态 ---
   const [trumpRank, setTrumpRank] = useState('2');
   const [dealtCards, setDealtCards] = useState([]);
+  const [tableDeal, setTableDeal] = useState(null);
   const [userCombos, setUserCombos] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedTypeIndex, setSelectedTypeIndex] = useState(0);
@@ -112,6 +139,9 @@ export function useGameState() {
   const [aiStatus, setAiStatus] = useState('idle');
   const [aiSearchMode, setAiSearchMode] = useState('balanced');
   const [primaryActionMode, setPrimaryActionMode] = useState('deal');
+  const [godViewEnabled, setGodViewEnabled] = useState(false);
+  const [godViewStatus, setGodViewStatus] = useState('idle');
+  const [godViewData, setGodViewData] = useState(null);
   const [iosOptimized, setIosOptimized] = useState(false);
 
   const [history, setHistory] = useState([]);
@@ -126,6 +156,13 @@ export function useGameState() {
     promise: null,
     result: null,
     usedFallback: false,
+    error: null
+  });
+  const godViewPrecomputeRef = useRef({
+    tableDealKey: '',
+    status: 'idle',
+    promise: null,
+    result: null,
     error: null
   });
 
@@ -214,6 +251,21 @@ export function useGameState() {
     aiResult && userScore && aiResult.score > userScore.total
   );
   const aiSearchModeLabel = AI_MODE_LABEL_MAP[aiSearchMode] || AI_MODE_LABEL_MAP.balanced;
+  const godViewReady = godViewStatus === 'ready' && Boolean(godViewData);
+
+  const ghostHints = useMemo(() => {
+    if (!godViewData?.players) return [];
+    return godViewData.players
+      .filter((item) => item.role === 'opponent')
+      .map((item) => ({
+        seat: item.seat,
+        seatName: item.seatName,
+        fireCount: item.preferred.fireCount,
+        bombCount: item.preferred.bombCount,
+        hands: item.preferred.handCount
+      }))
+      .sort((a, b) => b.fireCount - a.fireCount);
+  }, [godViewData]);
 
   // --- 副作用 ---
   useEffect(() => {
@@ -259,15 +311,19 @@ export function useGameState() {
     setStats(nextStats);
   }
 
-  function resetRoundState(nextCards, nextTrumpRank) {
+  function resetRoundState(nextCards, nextTrumpRank, nextTableDeal = null) {
     setTrumpRank(nextTrumpRank);
     setDealtCards(nextCards);
+    setTableDeal(nextTableDeal);
     setUserCombos([]);
     setSelectedIds([]);
     setSelectedTypeIndex(0);
     setUserScore(null);
     setAiResult(null);
     setAiStatus('idle');
+    setGodViewEnabled(false);
+    setGodViewStatus('idle');
+    setGodViewData(null);
   }
 
   function resetPrecomputeState() {
@@ -280,6 +336,104 @@ export function useGameState() {
       usedFallback: false,
       error: null
     };
+  }
+
+  function resetGodViewPrecomputeState() {
+    godViewPrecomputeRef.current = {
+      tableDealKey: '',
+      status: 'idle',
+      promise: null,
+      result: null,
+      error: null
+    };
+  }
+
+  function kickOffGodViewPrecompute(nextTableDeal, modeKey, forceRestart = false) {
+    const tableDealKey = buildTableDealKey(nextTableDeal);
+    if (!tableDealKey) return;
+
+    const current = godViewPrecomputeRef.current;
+    const sameTask =
+      current.tableDealKey === tableDealKey &&
+      (current.status === 'running' || current.status === 'ready');
+    if (!forceRestart && sameTask) {
+      return;
+    }
+
+    const timeLimitMs = GOD_VIEW_TIME_LIMIT_MS[modeKey] || GOD_VIEW_TIME_LIMIT_MS.balanced;
+    const maxBranch = GOD_VIEW_MAX_BRANCH[modeKey] || GOD_VIEW_MAX_BRANCH.balanced;
+    setGodViewStatus('running');
+
+    const task = Promise.resolve().then(() =>
+      analyzeGodView(nextTableDeal, {
+        userSeat: 'E',
+        timeLimitMs,
+        maxBranch
+      })
+    );
+
+    godViewPrecomputeRef.current = {
+      tableDealKey,
+      status: 'running',
+      promise: task,
+      result: null,
+      error: null
+    };
+
+    task
+      .then((payload) => {
+        const latest = godViewPrecomputeRef.current;
+        if (latest.promise !== task || latest.tableDealKey !== tableDealKey) {
+          return;
+        }
+
+        godViewPrecomputeRef.current = {
+          tableDealKey,
+          status: 'ready',
+          promise: task,
+          result: payload,
+          error: null
+        };
+        setGodViewData(payload);
+        setGodViewStatus('ready');
+      })
+      .catch((error) => {
+        const latest = godViewPrecomputeRef.current;
+        if (latest.promise !== task || latest.tableDealKey !== tableDealKey) {
+          return;
+        }
+
+        godViewPrecomputeRef.current = {
+          tableDealKey,
+          status: 'failed',
+          promise: null,
+          result: null,
+          error
+        };
+        setGodViewStatus('failed');
+      });
+  }
+
+  async function takeGodViewSnapshot(nextTableDeal) {
+    const tableDealKey = buildTableDealKey(nextTableDeal);
+    const snapshot = godViewPrecomputeRef.current;
+    if (snapshot.tableDealKey !== tableDealKey) {
+      return null;
+    }
+
+    if (snapshot.status === 'ready' && snapshot.result) {
+      return snapshot.result;
+    }
+
+    if (snapshot.status === 'running' && snapshot.promise) {
+      try {
+        return await snapshot.promise;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    return null;
   }
 
   async function runSingleProfileSearch(cards, rank, profile, options = {}) {
@@ -542,11 +696,14 @@ export function useGameState() {
 
     cancelPendingSearches('新牌局已开始，取消旧搜索。');
     resetPrecomputeState();
+    resetGodViewPrecomputeState();
 
-    const deal = createDeal();
-    resetRoundState(deal.dealtCards, deal.trumpRank);
-    kickOffPrecompute(deal.dealtCards, deal.trumpRank, aiSearchMode, true);
-    setNotice(`新牌局已开始，当前打几：${deal.trumpRank}。AI 已后台预计算。`);
+    const nextTableDeal = createTableDeal();
+    const eastCards = nextTableDeal.players.find((player) => player.seat === 'E')?.cards || [];
+    resetRoundState(eastCards, nextTableDeal.trumpRank, nextTableDeal);
+    kickOffPrecompute(eastCards, nextTableDeal.trumpRank, aiSearchMode, true);
+    kickOffGodViewPrecompute(nextTableDeal, aiSearchMode, true);
+    setNotice(`新牌局已开始，当前打几：${nextTableDeal.trumpRank}。AI 与上帝视角已后台预计算。`);
   }
 
   useEffect(() => {
@@ -565,8 +722,11 @@ export function useGameState() {
       precomputeRef.current.modeKey &&
       precomputeRef.current.modeKey !== aiSearchMode;
     kickOffPrecompute(dealtCards, trumpRank, aiSearchMode, shouldForceRestart);
+    if (tableDeal?.players?.length === 4) {
+      kickOffGodViewPrecompute(tableDeal, aiSearchMode, shouldForceRestart);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiSearchMode, iosOptimized, trumpRank, dealtCards]);
+  }, [aiSearchMode, iosOptimized, trumpRank, dealtCards, tableDeal]);
 
   function clearScoringResult() {
     setUserScore(null);
@@ -633,6 +793,9 @@ export function useGameState() {
 
     if (dealtCards.length === 27) {
       kickOffPrecompute(dealtCards, trumpRank, nextMode, true);
+      if (tableDeal?.players?.length === 4) {
+        kickOffGodViewPrecompute(tableDeal, nextMode, true);
+      }
     }
 
     setNotice(`已切换 AI 搜索档位：${AI_MODE_LABEL_MAP[nextMode]}（后台将重算当前牌局）`);
@@ -727,6 +890,13 @@ export function useGameState() {
       setAiResult(ai);
       setAiStatus('done');
 
+      const godViewSnapshot = tableDeal ? await takeGodViewSnapshot(tableDeal) : null;
+      if (godViewSnapshot) {
+        setGodViewData(godViewSnapshot);
+        setGodViewStatus('ready');
+        setGodViewEnabled(true);
+      }
+
       const gameRecord = {
         id: `g-${Date.now()}-${Math.random().toString(16).slice(2)}`,
         timestamp: Date.now(),
@@ -738,6 +908,12 @@ export function useGameState() {
         aiCombos: ai.combos,
         aiScore: ai.score,
         aiScoreDetail: ai.detail,
+        godViewSummary: godViewSnapshot
+          ? {
+              interruptionProbability: godViewSnapshot.realtime?.interruptionProbability ?? null,
+              backupValue: godViewSnapshot.realtime?.backupValue ?? null
+            }
+          : null,
         aiSearchMode: modeKey,
         hasAiRecommendation: ai.score > userScoreResult.total,
         isOptimal: ai.score <= userScoreResult.total
@@ -832,6 +1008,48 @@ export function useGameState() {
     }
   }
 
+  async function toggleGodView() {
+    if (!tableDeal?.players?.length) {
+      setNotice('当前牌局缺少四家手牌数据，无法打开上帝视角。');
+      return;
+    }
+
+    const nextEnabled = !godViewEnabled;
+    setGodViewEnabled(nextEnabled);
+    if (!nextEnabled) {
+      return;
+    }
+
+    if (godViewData) {
+      return;
+    }
+
+    setGodViewStatus('running');
+    const snapshot = await takeGodViewSnapshot(tableDeal);
+    if (snapshot) {
+      setGodViewData(snapshot);
+      setGodViewStatus('ready');
+      return;
+    }
+
+    try {
+      const fallback = analyzeGodView(tableDeal, {
+        userSeat: 'E',
+        timeLimitMs: GOD_VIEW_TIME_LIMIT_MS[aiSearchMode] || GOD_VIEW_TIME_LIMIT_MS.balanced,
+        maxBranch: GOD_VIEW_MAX_BRANCH[aiSearchMode] || GOD_VIEW_MAX_BRANCH.balanced
+      });
+      if (fallback) {
+        setGodViewData(fallback);
+        setGodViewStatus('ready');
+      } else {
+        setGodViewStatus('failed');
+      }
+    } catch (error) {
+      setGodViewStatus('failed');
+      setNotice('上帝视角分析失败，请重试。');
+    }
+  }
+
   return {
     trumpRank,
     dealtCards,
@@ -863,6 +1081,12 @@ export function useGameState() {
     aiSearchMode,
     aiSearchModeLabel,
     aiSearchModeOptions: AI_SEARCH_MODE_OPTIONS,
+    tableDeal,
+    godViewEnabled,
+    godViewStatus,
+    godViewData,
+    godViewReady,
+    ghostHints,
     primaryActionMode,
     primaryActionLabel,
     primaryActionDisabled,
@@ -874,6 +1098,7 @@ export function useGameState() {
     resetSelection,
     submitScoring,
     setAiSearchMode: handleChangeAiSearchMode,
+    toggleGodView,
     exportHistory,
     openImportDialog,
     importHistory,
