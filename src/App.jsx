@@ -11,10 +11,29 @@ import GodViewPanel from './components/GodViewPanel.jsx';
 
 export default function App() {
   const g = useGameState();
+  const canConfirmFromHeader =
+    !g.isSolving && g.selectedCards.length > 0 && g.candidateTypes.length > 0;
+  const autoCompleteDisabledFromHeader =
+    g.isSolving || (g.remainingCards.length === 0 && Boolean(g.aiResult));
+
+  const scrollToStats = () => {
+    const target = document.getElementById('stats-section');
+    if (!target) return;
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <main className="page">
-      <Header />
+      <Header
+        onNewDeal={g.handlePrimaryAction}
+        onAutoComplete={g.autoCompleteAndSubmit}
+        onConfirmGroup={g.confirmGroup}
+        onViewStats={scrollToStats}
+        newDealDisabled={g.primaryActionDisabled}
+        autoCompleteDisabled={autoCompleteDisabledFromHeader}
+        confirmDisabled={!canConfirmFromHeader}
+        trumpRank={g.trumpRank}
+      />
 
       {/* Toast 通知：右下角浮动，key 驱动动画重播 */}
       {g.notice ? (
@@ -107,7 +126,7 @@ export default function App() {
         </section>
       ) : null}
 
-      <section className="layout-grid">
+      <section id="stats-section" className="layout-grid">
         <StatsPanel stats={g.stats} />
         <HistoryPanel history={g.history} />
       </section>
