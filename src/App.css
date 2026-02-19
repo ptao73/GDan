@@ -928,6 +928,11 @@ button.ghost:hover {
   gap: 8px;
 }
 
+.god-analysis-stack {
+  display: grid;
+  gap: 10px;
+}
+
 .god-overview-grid p {
   margin: 0;
   padding: 7px 9px;
@@ -960,7 +965,7 @@ button.ghost:hover {
 }
 
 .god-tribute {
-  margin-top: 10px;
+  margin-top: 0;
 }
 
 .god-tribute h3 {
@@ -1028,6 +1033,15 @@ button.ghost:hover {
 .god-seat.role-teammate {
   border-color: rgba(76, 156, 108, 0.46);
   background: rgba(234, 248, 239, 0.76);
+}
+
+.god-seat-metrics {
+  margin: 0;
+  color: #4b4436;
+}
+
+.god-seat-combo-list {
+  margin-top: 0;
 }
 
 .god-threat {
