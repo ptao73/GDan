@@ -14,9 +14,7 @@ export default function HistoryPanel({ history }) {
             <span>用户 {item.userScore}</span>
             <span>AI {item.aiScore}</span>
             <span>
-              {item.isOptimal
-                ? '命中最优'
-                : `差 ${Math.max(0, item.aiScore - item.userScore)} 分`}
+              {item.isOptimal ? '命中最优' : `差 ${Math.max(0, item.aiScore - item.userScore)} 分`}
             </span>
           </li>
         ))}

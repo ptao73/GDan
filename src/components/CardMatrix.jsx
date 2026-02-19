@@ -85,9 +85,13 @@ export default function CardMatrix({
                         }`}
                       >
                         {cardsInCell.length === 0 ? (
-                          isVirtualJokerCell ? null : <span className="matrix-empty-slot" />
+                          isVirtualJokerCell ? null : (
+                            <span className="matrix-empty-slot" />
+                          )
                         ) : (
-                          <div className={`matrix-stack ${cardsInCell.length > 1 ? 'has-pair' : ''}`}>
+                          <div
+                            className={`matrix-stack ${cardsInCell.length > 1 ? 'has-pair' : ''}`}
+                          >
                             {cardsInCell.map((card) => (
                               <PlayingCard
                                 key={card.id}

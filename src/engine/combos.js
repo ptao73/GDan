@@ -1,10 +1,4 @@
-import {
-  STANDARD_RANKS,
-  SUITS,
-  isJoker,
-  isWildcardCard,
-  rankValue
-} from './cards.js';
+import { STANDARD_RANKS, SUITS, isJoker, isWildcardCard, rankValue } from './cards.js';
 
 export const COMBO_LABELS = {
   single: '单张',
@@ -185,7 +179,14 @@ function matchNOfKind(cards, size, trumpRank) {
 }
 
 // 2C: 加速版 matchSequencePattern — 用 bitmask AND 做快速排除
-function matchSequencePattern(fixedCards, wildcardCount, candidate, copiesPerRank, fixedMask, fixedCounts) {
+function matchSequencePattern(
+  fixedCards,
+  wildcardCount,
+  candidate,
+  copiesPerRank,
+  fixedMask,
+  fixedCounts
+) {
   const { ranks, mask: candidateMask } = candidate;
 
   // 快速排除：如果 fixed 牌中有 candidate 不覆盖的 rank，直接失败
@@ -265,7 +266,9 @@ function matchStraight(cards, trumpRank) {
   const { mask: fixedMask, counts: fixedCounts } = rankPresenceMask(fixedNoJoker);
   const matched = [];
   for (const candidate of STRAIGHT_CANDIDATES) {
-    if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 1, fixedMask, fixedCounts)) {
+    if (
+      matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 1, fixedMask, fixedCounts)
+    ) {
       matched.push({
         mainRank: candidate.ranks[candidate.ranks.length - 1],
         sequence: candidate.ranks
@@ -285,7 +288,9 @@ function matchWood(cards, trumpRank) {
   const { mask: fixedMask, counts: fixedCounts } = rankPresenceMask(fixedNoJoker);
   const matched = [];
   for (const candidate of WOOD_CANDIDATES) {
-    if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 2, fixedMask, fixedCounts)) {
+    if (
+      matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 2, fixedMask, fixedCounts)
+    ) {
       matched.push({
         mainRank: candidate.ranks[candidate.ranks.length - 1],
         sequence: candidate.ranks
@@ -305,7 +310,9 @@ function matchSteel(cards, trumpRank) {
   const { mask: fixedMask, counts: fixedCounts } = rankPresenceMask(fixedNoJoker);
   const matched = [];
   for (const candidate of STEEL_CANDIDATES) {
-    if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 3, fixedMask, fixedCounts)) {
+    if (
+      matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 3, fixedMask, fixedCounts)
+    ) {
       matched.push({
         mainRank: candidate.ranks[candidate.ranks.length - 1],
         sequence: candidate.ranks
@@ -331,7 +338,9 @@ function matchStraightFlush(cards, trumpRank) {
 
   for (const suit of suitCandidates) {
     for (const candidate of STRAIGHT_CANDIDATES) {
-      if (matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 1, fixedMask, fixedCounts)) {
+      if (
+        matchSequencePattern(fixedNoJoker, wildcards.length, candidate, 1, fixedMask, fixedCounts)
+      ) {
         matched.push({
           mainRank: candidate.ranks[candidate.ranks.length - 1],
           sequence: candidate.ranks,
@@ -582,7 +591,14 @@ export function comboPriority(type) {
 }
 
 export function isBomb(comboType) {
-  return comboType === 'bomb4' || comboType === 'bomb5' || comboType === 'bomb6' || comboType === 'bomb7' || comboType === 'bomb8' || comboType === 'tianwang';
+  return (
+    comboType === 'bomb4' ||
+    comboType === 'bomb5' ||
+    comboType === 'bomb6' ||
+    comboType === 'bomb7' ||
+    comboType === 'bomb8' ||
+    comboType === 'tianwang'
+  );
 }
 
 export function isFireCombo(comboType) {

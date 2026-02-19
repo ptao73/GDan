@@ -55,8 +55,8 @@ export default function App() {
                 {g.godViewStatus === 'running' && !g.godViewEnabled
                   ? '上帝视角计算中...'
                   : g.godViewEnabled
-                  ? '收起上帝视角'
-                  : '上帝视角'}
+                    ? '收起上帝视角'
+                    : '上帝视角'}
               </button>
               <input
                 ref={g.importInputRef}
@@ -92,6 +92,13 @@ export default function App() {
             <span className={`assign-state ${g.canAnalyze ? 'ok' : 'pending'}`}>
               已分配 {g.assignedCardsCount}/27
             </span>
+            <button
+              className="ghost"
+              onClick={g.autoCompleteSinglesAndPairs}
+              disabled={g.isSolving || g.remainingCards.length === 0}
+            >
+              自动补全单张/对子
+            </button>
             <button onClick={g.handlePrimaryAction} disabled={g.primaryActionDisabled}>
               {g.primaryActionLabel}
             </button>

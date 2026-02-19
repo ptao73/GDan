@@ -54,7 +54,7 @@ export default function ComboList({
   userScore,
   aiScoreView,
   removeGroup,
-  isSolving,
+  isSolving
 }) {
   const sortedUserItems = buildSortableItems(userCombos, trumpRank);
   const sortedAiItems = aiResult ? buildSortableItems(aiResult.combos || [], trumpRank) : [];
@@ -71,11 +71,12 @@ export default function ComboList({
             ) : (
               sortedUserItems.map((item) => {
                 const key = comboKey(item.combo);
-                const compareClass = hasAiColumn && aiHasRecommendation
-                  ? aiComboKeySet.has(key)
-                    ? 'same'
-                    : 'removed'
-                  : '';
+                const compareClass =
+                  hasAiColumn && aiHasRecommendation
+                    ? aiComboKeySet.has(key)
+                      ? 'same'
+                      : 'removed'
+                    : '';
                 return (
                   <li key={`user-${key}-${item.originIndex}`} className={compareClass}>
                     <div className="combo-line">

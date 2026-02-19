@@ -202,12 +202,7 @@ export function scoreScheme(combos, trumpRank, strategy = 'balanced') {
   }
 
   const total =
-    shapeScore +
-    burstScore * burstWeight +
-    keyScore * keyWeight +
-    roundScore +
-    handBonus -
-    isoP;
+    shapeScore + burstScore * burstWeight + keyScore * keyWeight + roundScore + handBonus - isoP;
 
   return {
     total,

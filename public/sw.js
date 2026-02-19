@@ -59,6 +59,16 @@ self.addEventListener('fetch', (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/index.html')))
+      .catch(() =>
+        caches.match(event.request).then((cached) => {
+          if (cached) {
+            return cached;
+          }
+          if (event.request.mode === 'navigate') {
+            return caches.match('/index.html');
+          }
+          return Response.error();
+        })
+      )
   );
 });

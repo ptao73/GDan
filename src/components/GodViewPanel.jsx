@@ -61,7 +61,9 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
     <article className="panel god-view-panel">
       <h2>上帝视角</h2>
       {godViewData.endgameFlag && (
-        <p className="warn" style={{ marginBottom: '8px' }}>⚠ 残局模式 — 对手理论手数 ≤ 4，每一手牌至关重要</p>
+        <p className="warn" style={{ marginBottom: '8px' }}>
+          ⚠ 残局模式 — 对手理论手数 ≤ 4，每一手牌至关重要
+        </p>
       )}
       <div className="god-overview-grid">
         <p>对手火力：{godViewData.overview.opponentFireTotal}</p>
@@ -73,7 +75,8 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
       <div className="god-composition">
         <h3>组牌最优化对比（A/B）</h3>
         <p className="hint">
-          推荐：{godViewData.composition.recommended === 'aggressive' ? '方案B 进攻型' : '方案A 稳健型'}，
+          推荐：
+          {godViewData.composition.recommended === 'aggressive' ? '方案B 进攻型' : '方案A 稳健型'}，
           {godViewData.composition.reason}
         </p>
         {godViewData.composition.explanation && (
@@ -126,11 +129,14 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
               {strategyText(player.preferredStrategy)}
             </p>
             <p className="god-combo-line">
-              组牌建议：{player.preferred.combos.map((combo) => comboText(combo)).join(' · ') || '--'}
+              组牌建议：
+              {player.preferred.combos.map((combo) => comboText(combo)).join(' · ') || '--'}
             </p>
             <details>
               <summary>查看手牌（{player.cards.length}）</summary>
-              <p className="god-ghost-cards">{player.cards.map((card) => cardLabel(card)).join(' ')}</p>
+              <p className="god-ghost-cards">
+                {player.cards.map((card) => cardLabel(card)).join(' ')}
+              </p>
             </details>
           </section>
         ))}

@@ -13,7 +13,6 @@ import {
   isStandardRank,
   rankValue,
   STANDARD_RANKS,
-  SUITS,
   TABLE_SEATS
 } from '../cards.js';
 

@@ -115,17 +115,13 @@ function averageSnapshot(players, role) {
 
 export function isEndgame(players) {
   if (!players || players.length === 0) return false;
-  return players.some(
-    (p) => p.role === 'opponent' && p.preferred && p.preferred.handCount <= 4
-  );
+  return players.some((p) => p.role === 'opponent' && p.preferred && p.preferred.handCount <= 4);
 }
 
 function interruptionProbability(scheme, opponentsAvg, endgameFlag = false) {
   const egMul = endgameFlag ? 2 : 1;
   const vulnerability =
-    scheme.singleCount * 0.9 +
-    scheme.handCount * 0.3 +
-    Math.max(0, 4 - scheme.fireCount) * 0.9;
+    scheme.singleCount * 0.9 + scheme.handCount * 0.3 + Math.max(0, 4 - scheme.fireCount) * 0.9;
   const raw =
     0.16 +
     opponentsAvg.fireCount * 0.055 * egMul +
@@ -244,9 +240,7 @@ export function analyzeTribute(selfCards, opponentCards, trumpRank, options = {}
     topK: 1
   });
   const baselineBest = preferredScheme(baselineDual);
-  const baselineFireCount = baselineBest
-    ? snapshotScheme(baselineBest.result).fireCount
-    : 0;
+  const baselineFireCount = baselineBest ? snapshotScheme(baselineBest.result).fireCount : 0;
 
   // 只分析大牌（A、K、Q）和配牌，避免遍历所有 27 张
   const seen = new Set();
@@ -269,9 +263,7 @@ export function analyzeTribute(selfCards, opponentCards, trumpRank, options = {}
       topK: 1
     });
     const selfBest = preferredScheme(selfDual);
-    const selfFireAfter = selfBest
-      ? snapshotScheme(selfBest.result).fireCount
-      : 0;
+    const selfFireAfter = selfBest ? snapshotScheme(selfBest.result).fireCount : 0;
 
     const oppDual = solveDualRecommendation(oppAfter, trumpRank, {
       timeLimitMs,
@@ -279,9 +271,7 @@ export function analyzeTribute(selfCards, opponentCards, trumpRank, options = {}
       topK: 1
     });
     const oppBest = preferredScheme(oppDual);
-    const oppFireAfter = oppBest
-      ? snapshotScheme(oppBest.result).fireCount
-      : 0;
+    const oppFireAfter = oppBest ? snapshotScheme(oppBest.result).fireCount : 0;
 
     return {
       card,
@@ -303,18 +293,17 @@ export function analyzeTribute(selfCards, opponentCards, trumpRank, options = {}
 
 function normalizePlayers(tableDealPlayers = []) {
   const bySeat = new Map(
-    tableDealPlayers.map((player) => [player.seat, { seat: player.seat, cards: player.cards || [] }])
+    tableDealPlayers.map((player) => [
+      player.seat,
+      { seat: player.seat, cards: player.cards || [] }
+    ])
   );
   return SEAT_ORDER.map((seat) => bySeat.get(seat) || { seat, cards: [] });
 }
 
 export function analyzeGodView(
   tableDeal,
-  {
-    userSeat = 'E',
-    timeLimitMs = 1800,
-    maxBranch = 24
-  } = {}
+  { userSeat = 'E', timeLimitMs = 1800, maxBranch = 24 } = {}
 ) {
   const players = normalizePlayers(tableDeal?.players || []);
   const trumpRank = tableDeal?.trumpRank;

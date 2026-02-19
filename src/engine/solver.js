@@ -1,6 +1,11 @@
 import { cardSortValue, isJoker, isWildcardCard, rankValue, STANDARD_RANKS } from './cards.js';
 import { COMBO_LABELS, comboPriority, detectComboTypes, isFireCombo } from './combos.js';
-import { roundCorrection, scoreComboNoRound, scoreScheme, wildcardUtilityPenalty } from './scoring.js';
+import {
+  roundCorrection,
+  scoreComboNoRound,
+  scoreScheme,
+  wildcardUtilityPenalty
+} from './scoring.js';
 
 const MAX_COMBO_SIZE = 8;
 const DEFAULT_TIME_LIMIT = 3000;
@@ -86,9 +91,7 @@ function buildCandidatePool(remaining, anchor, trumpRank) {
   if (!isJoker(anchor)) {
     addMany(remaining.filter((card) => !isJoker(card) && card.suit === anchor.suit));
     addMany(
-      remaining.filter(
-        (card) => !isJoker(card) && cyclicRankDistance(card.rank, anchor.rank) <= 4
-      )
+      remaining.filter((card) => !isJoker(card) && cyclicRankDistance(card.rank, anchor.rank) <= 4)
     );
   }
 
@@ -156,7 +159,15 @@ function candidateKey(combo) {
     .map((card) => card.id)
     .sort((a, b) => a.localeCompare(b))
     .join(',');
-  return [combo.type, cardKey, combo.mainRank || '', combo.sequence ? combo.sequence.join('-') : '', combo.suit || '', combo.tripleRank || '', combo.pairRank || ''].join('|');
+  return [
+    combo.type,
+    cardKey,
+    combo.mainRank || '',
+    combo.sequence ? combo.sequence.join('-') : '',
+    combo.suit || '',
+    combo.tripleRank || '',
+    combo.pairRank || ''
+  ].join('|');
 }
 
 function schemeKey(combos) {
@@ -216,7 +227,13 @@ function splitBombPenalty(combo, bombProtection) {
 function candidateEstimate(combo, component, bombProtection, trumpRank) {
   const splitPenalty = splitBombPenalty(combo, bombProtection);
   const wcPenalty = trumpRank ? wildcardUtilityPenalty(combo, trumpRank) : 0;
-  return component.total * 8 + combo.cards.length * 2 + comboPriority(combo.type) - splitPenalty - wcPenalty * 4;
+  return (
+    component.total * 8 +
+    combo.cards.length * 2 +
+    comboPriority(combo.type) -
+    splitPenalty -
+    wcPenalty * 4
+  );
 }
 
 function generateCandidates(remaining, trumpRank, maxBranch, bombProtection) {
@@ -306,16 +323,6 @@ function greedyBaseline(cards, trumpRank, maxBranch, bombProtection) {
     combos,
     score: total
   };
-}
-
-function theoreticalUpperBound(partialScore, remainCount, minHandsPossible) {
-  let roundUpper = 0;
-  if (minHandsPossible <= 8) {
-    roundUpper = roundCorrection(minHandsPossible);
-  } else if (minHandsPossible > 10) {
-    roundUpper = roundCorrection(minHandsPossible);
-  }
-  return partialScore + remainCount * 4 + roundUpper + 12;
 }
 
 // 3A: 剩余牌质量快速估算
@@ -416,34 +423,26 @@ export function compareSchemeResult(a, b) {
   if (!a) return 1;
   if (!b) return -1;
 
-  const aHands = a.detail?.handCount ?? Number.POSITIVE_INFINITY;
-  const bHands = b.detail?.handCount ?? Number.POSITIVE_INFINITY;
-  if (aHands !== bHands) {
-    return aHands - bHands;
-  }
-
   const aScore = Number.isFinite(a.score) ? a.score : Number.NEGATIVE_INFINITY;
   const bScore = Number.isFinite(b.score) ? b.score : Number.NEGATIVE_INFINITY;
   if (aScore !== bScore) {
     return bScore - aScore;
   }
 
-  const aSplit = Number.isFinite(a.splitBombCards)
-    ? a.splitBombCards
-    : Number.POSITIVE_INFINITY;
-  const bSplit = Number.isFinite(b.splitBombCards)
-    ? b.splitBombCards
-    : Number.POSITIVE_INFINITY;
+  const aHands = a.detail?.handCount ?? Number.POSITIVE_INFINITY;
+  const bHands = b.detail?.handCount ?? Number.POSITIVE_INFINITY;
+  if (aHands !== bHands) {
+    return aHands - bHands;
+  }
+
+  const aSplit = Number.isFinite(a.splitBombCards) ? a.splitBombCards : Number.POSITIVE_INFINITY;
+  const bSplit = Number.isFinite(b.splitBombCards) ? b.splitBombCards : Number.POSITIVE_INFINITY;
   if (aSplit !== bSplit) {
     return aSplit - bSplit;
   }
 
-  const aFire = Number.isFinite(a.fireComboCount)
-    ? a.fireComboCount
-    : Number.NEGATIVE_INFINITY;
-  const bFire = Number.isFinite(b.fireComboCount)
-    ? b.fireComboCount
-    : Number.NEGATIVE_INFINITY;
+  const aFire = Number.isFinite(a.fireComboCount) ? a.fireComboCount : Number.NEGATIVE_INFINITY;
+  const bFire = Number.isFinite(b.fireComboCount) ? b.fireComboCount : Number.NEGATIVE_INFINITY;
   if (aFire !== bFire) {
     return bFire - aFire;
   }
@@ -558,9 +557,10 @@ function beamSearch(sorted, trumpRank, bombProtection, options) {
           remaining: nextRemaining,
           partialScore: nextPartial,
           // 综合评估分: 部分得分 + 剩余质量估算 + 轮次修正预估
-          beamScore: nextPartial + quality * 0.5 + roundCorrection(
-            state.combos.length + 1 + Math.ceil(nextRemaining.length / 4)
-          ) * 0.3
+          beamScore:
+            nextPartial +
+            quality * 0.5 +
+            roundCorrection(state.combos.length + 1 + Math.ceil(nextRemaining.length / 4)) * 0.3
         });
       }
     }
@@ -597,15 +597,15 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
   const timeLimitMs = options.timeLimitMs ?? DEFAULT_TIME_LIMIT;
   const maxBranch = options.maxBranch ?? DEFAULT_MAX_BRANCH;
   const topK = Math.max(1, Math.min(10, Math.floor(options.topK ?? DEFAULT_TOP_K)));
-  const targetScore =
-    typeof options.targetScore === 'number' ? options.targetScore : null;
-  const stopAfterSurpass =
-    Boolean(options.stopAfterSurpass) && targetScore !== null;
+  const targetScore = typeof options.targetScore === 'number' ? options.targetScore : null;
+  const stopAfterSurpass = Boolean(options.stopAfterSurpass) && targetScore !== null;
   const strategy = options.strategy || 'balanced';
   const beamWidth = options.beamWidth || Math.max(8, Math.floor(maxBranch * 0.6));
   const deadline = startAt + timeLimitMs;
 
-  const sorted = [...cards].sort((a, b) => cardSortValue(a, trumpRank) - cardSortValue(b, trumpRank));
+  const sorted = [...cards].sort(
+    (a, b) => cardSortValue(a, trumpRank) - cardSortValue(b, trumpRank)
+  );
   if (sorted.length === 0) {
     const empty = {
       combos: [],
@@ -677,11 +677,7 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
     timedOut,
     elapsedMs,
     exact: !timedOut,
-    stopReason: timedOut
-      ? 'timeout'
-      : surpassedTarget
-      ? 'target-surpassed'
-      : 'completed',
+    stopReason: timedOut ? 'timeout' : surpassedTarget ? 'target-surpassed' : 'completed',
     surpassedTarget,
     searchNodes,
     topResults: publicTop,

@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createTableDeal } from '../engine/cards.js';
-import {
-  comboKey,
-  createCombo,
-  detectComboTypes
-} from '../engine/combos.js';
+import { comboKey, createCombo, detectComboTypes } from '../engine/combos.js';
 import { scoreScheme } from '../engine/scoring.js';
 import { compareSchemeResult, solveBestScheme, solveDualRecommendation } from '../engine/solver.js';
 import { analyzeGodView } from '../engine/godView.js';
@@ -83,10 +79,7 @@ function resolveAiProfiles(modeKey, iosOptimized) {
   return base.map((profile, index) => ({
     ...profile,
     timeLimitMs: Math.min(profile.timeLimitMs, timeCaps[index] || 6200),
-    maxBranch: Math.max(
-      16,
-      Math.min(profile.maxBranch || 24, profile.mode === 'worker' ? 34 : 30)
-    )
+    maxBranch: Math.max(16, Math.min(profile.maxBranch || 24, profile.mode === 'worker' ? 34 : 30))
   }));
 }
 
@@ -98,17 +91,17 @@ function buildDealKey(cards, trumpRank) {
 }
 
 function buildTableDealKey(tableDeal) {
-  if (!tableDeal?.trumpRank || !Array.isArray(tableDeal.players) || tableDeal.players.length === 0) {
+  if (
+    !tableDeal?.trumpRank ||
+    !Array.isArray(tableDeal.players) ||
+    tableDeal.players.length === 0
+  ) {
     return '';
   }
 
   const seatOrder = ['E', 'S', 'W', 'N'];
   const bySeat = new Map(tableDeal.players.map((player) => [player.seat, player.cards || []]));
-  const parts = seatOrder.map((seat) =>
-    (bySeat.get(seat) || [])
-      .map((card) => card.id)
-      .join('.')
-  );
+  const parts = seatOrder.map((seat) => (bySeat.get(seat) || []).map((card) => card.id).join('.'));
   return `${tableDeal.trumpRank}|${parts.join('/')}`;
 }
 
@@ -119,6 +112,41 @@ function isBetterResult(next, current) {
 function phaseOneSize(modeKey, profileCount) {
   if (profileCount <= 1) return profileCount;
   return modeKey === 'fast' ? 1 : Math.min(2, profileCount);
+}
+
+function pickAutoPair(cards, trumpRank) {
+  let picked = null;
+
+  for (let i = 0; i < cards.length - 1; i += 1) {
+    for (let j = i + 1; j < cards.length; j += 1) {
+      const pairCards = [cards[i], cards[j]];
+      const definition = detectComboTypes(pairCards, trumpRank).find(
+        (item) => item.type === 'pair'
+      );
+      if (!definition) continue;
+
+      const sameRank = cards[i].rank === cards[j].rank ? 1 : 0;
+      const sortedIds = [cards[i].id, cards[j].id].sort((a, b) => a.localeCompare(b));
+      const idKey = sortedIds.join('|');
+      const candidate = {
+        i,
+        j,
+        definition,
+        score: sameRank,
+        idKey
+      };
+
+      if (
+        !picked ||
+        candidate.score > picked.score ||
+        (candidate.score === picked.score && candidate.idKey < picked.idKey)
+      ) {
+        picked = candidate;
+      }
+    }
+  }
+
+  return picked;
 }
 
 /**
@@ -244,12 +272,8 @@ export function useGameState() {
     [remainingCards, trumpRank]
   );
 
-  const aiScoreView = aiResult
-    ? { total: aiResult.score, detail: aiResult.detail }
-    : null;
-  const aiHasRecommendation = Boolean(
-    aiResult && userScore && aiResult.score > userScore.total
-  );
+  const aiScoreView = aiResult ? { total: aiResult.score, detail: aiResult.detail } : null;
+  const aiHasRecommendation = Boolean(aiResult && userScore && aiResult.score > userScore.total);
   const aiSearchModeLabel = AI_MODE_LABEL_MAP[aiSearchMode] || AI_MODE_LABEL_MAP.balanced;
   const godViewReady = godViewStatus === 'ready' && Boolean(godViewData);
 
@@ -288,7 +312,7 @@ export function useGameState() {
       } else if (isIosRuntime) {
         setAiSearchMode('fast');
       }
-    } catch (error) {
+    } catch (_error) {
       // Ignore storage failures in privacy-restricted environments.
     }
   }, []);
@@ -296,7 +320,7 @@ export function useGameState() {
   useEffect(() => {
     try {
       window.localStorage.setItem(AI_MODE_STORAGE_KEY, aiSearchMode);
-    } catch (error) {
+    } catch (_error) {
       // Ignore storage failures in privacy-restricted environments.
     }
   }, [aiSearchMode]);
@@ -433,7 +457,7 @@ export function useGameState() {
     if (snapshot.status === 'running' && snapshot.promise) {
       try {
         return await snapshot.promise;
-      } catch (error) {
+      } catch (_error) {
         return null;
       }
     }
@@ -512,22 +536,19 @@ export function useGameState() {
     let usedFallback = false;
     let attemptCount = initialAttempts || 0;
     let surpassedTarget =
-      typeof targetScore === 'number' && bestResult
-        ? bestResult.score > targetScore
-        : false;
+      typeof targetScore === 'number' && bestResult ? bestResult.score > targetScore : false;
 
     for (const profile of profiles) {
       attemptCount += 1;
-      const { result, usedFallback: profileFallback, dualMode: isDual } = await runSingleProfileSearch(
-        cards,
-        rank,
-        profile,
-        {
-          targetScore,
-          stopAfterSurpass,
-          dualMode
-        }
-      );
+      const {
+        result,
+        usedFallback: profileFallback,
+        dualMode: isDual
+      } = await runSingleProfileSearch(cards, rank, profile, {
+        targetScore,
+        stopAfterSurpass,
+        dualMode
+      });
 
       if (profileFallback) {
         usedFallback = true;
@@ -572,8 +593,7 @@ export function useGameState() {
       ai: {
         ...resolvedBest,
         searchAttempts: attemptCount,
-        surpassedUser:
-          typeof targetScore === 'number' ? resolvedBest.score > targetScore : false,
+        surpassedUser: typeof targetScore === 'number' ? resolvedBest.score > targetScore : false,
         searchMode: modeKey,
         searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced,
         dualResult
@@ -685,7 +705,7 @@ export function useGameState() {
           usedFallback: payload.usedFallback,
           fromPrecompute: true
         };
-      } catch (error) {
+      } catch (_error) {
         return null;
       }
     }
@@ -706,6 +726,7 @@ export function useGameState() {
     const nextTableDeal = createTableDeal();
     const eastCards = nextTableDeal.players.find((player) => player.seat === 'E')?.cards || [];
     resetRoundState(eastCards, nextTableDeal.trumpRank, nextTableDeal);
+    setPrimaryActionMode('analyze');
     kickOffPrecompute(eastCards, nextTableDeal.trumpRank, aiSearchMode, true);
     kickOffGodViewPrecompute(nextTableDeal, aiSearchMode, true);
     setNotice(`新牌局已开始，当前打几：${nextTableDeal.trumpRank}。AI 与上帝视角已后台预计算。`);
@@ -784,6 +805,51 @@ export function useGameState() {
   function resetSelection() {
     if (isSolving) return;
     setSelectedIds([]);
+  }
+
+  function autoCompleteSinglesAndPairs() {
+    if (isSolving) return;
+    if (remainingCards.length === 0) {
+      setNotice('当前没有可自动补全的剩余牌。');
+      return;
+    }
+
+    clearScoringResult();
+    const pool = [...remainingCards];
+    const generated = [];
+    let pairCount = 0;
+
+    while (pool.length >= 2) {
+      const nextPair = pickAutoPair(pool, trumpRank);
+      if (!nextPair) break;
+
+      const pairCards = [pool[nextPair.i], pool[nextPair.j]];
+      const pairCombo = createCombo(pairCards, trumpRank, nextPair.definition);
+      if (!pairCombo || pairCombo.type !== 'pair') break;
+
+      generated.push(pairCombo);
+      pairCount += 1;
+      pool.splice(nextPair.j, 1);
+      pool.splice(nextPair.i, 1);
+    }
+
+    let singleCount = 0;
+    for (const card of pool) {
+      const singleCombo = createCombo([card], trumpRank, 'single');
+      if (!singleCombo) continue;
+      generated.push(singleCombo);
+      singleCount += 1;
+    }
+
+    if (generated.length === 0) {
+      setNotice('自动补全失败，请手动完成组牌。');
+      return;
+    }
+
+    setUserCombos((prev) => [...prev, ...generated]);
+    setSelectedIds([]);
+    setSelectedTypeIndex(0);
+    setNotice(`已自动补全剩余牌：${pairCount} 个对子，${singleCount} 张单牌。`);
   }
 
   function handleChangeAiSearchMode(nextMode) {
@@ -946,11 +1012,11 @@ export function useGameState() {
             `已执行${modeLabel}多轮搜索，仍未找到高于玩家得分的方案；你的方案可能已接近最优。`
           );
         }
-      } catch (error) {
+      } catch (_error) {
         setNotice('本局评分完成，但保存历史失败。');
       }
       return true;
-    } catch (error) {
+    } catch (_error) {
       setAiStatus('idle');
       setNotice('AI 计算失败，请重试。');
       return false;
@@ -986,7 +1052,7 @@ export function useGameState() {
       link.click();
       URL.revokeObjectURL(url);
       setNotice('已导出历史数据。');
-    } catch (error) {
+    } catch (_error) {
       setNotice('导出失败。');
     }
   }
@@ -1056,7 +1122,7 @@ export function useGameState() {
       } else {
         setGodViewStatus('failed');
       }
-    } catch (error) {
+    } catch (_error) {
       setGodViewStatus('failed');
       setNotice('上帝视角分析失败，请重试。');
     }
@@ -1108,11 +1174,12 @@ export function useGameState() {
     removeGroup,
     confirmGroup,
     resetSelection,
+    autoCompleteSinglesAndPairs,
     submitScoring,
     setAiSearchMode: handleChangeAiSearchMode,
     toggleGodView,
     exportHistory,
     openImportDialog,
-    importHistory,
+    importHistory
   };
 }

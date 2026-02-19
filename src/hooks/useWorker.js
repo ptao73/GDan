@@ -8,13 +8,14 @@ export function useWorker() {
   const tasksRef = useRef(new Map());
 
   useEffect(() => {
+    const tasks = tasksRef.current;
     return () => {
-      for (const task of tasksRef.current.values()) {
+      for (const task of tasks.values()) {
         clearTimeout(task.timer);
         task.reject(new Error('Worker closed'));
         task.worker.terminate();
       }
-      tasksRef.current.clear();
+      tasks.clear();
     };
   }, []);
 
@@ -28,10 +29,9 @@ export function useWorker() {
 
     return new Promise((resolve, reject) => {
       const requestId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      const worker = new Worker(
-        new URL('../workers/solverWorker.js', import.meta.url),
-        { type: 'module' }
-      );
+      const worker = new Worker(new URL('../workers/solverWorker.js', import.meta.url), {
+        type: 'module'
+      });
 
       const cleanup = () => {
         const task = tasksRef.current.get(requestId);
@@ -86,15 +86,17 @@ export function useWorker() {
     tasksRef.current.clear();
   }
 
-  function runGodViewWithWorker(tableDeal, { userSeat = 'E', timeLimitMs = 650, maxBranch = 20 } = {}) {
+  function runGodViewWithWorker(
+    tableDeal,
+    { userSeat = 'E', timeLimitMs = 650, maxBranch = 20 } = {}
+  ) {
     const watchdogMs = Math.max(5000, timeLimitMs * 4 + 2000);
 
     return new Promise((resolve, reject) => {
       const requestId = `gv-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-      const worker = new Worker(
-        new URL('../workers/godViewWorker.js', import.meta.url),
-        { type: 'module' }
-      );
+      const worker = new Worker(new URL('../workers/godViewWorker.js', import.meta.url), {
+        type: 'module'
+      });
 
       const cleanup = () => {
         const task = tasksRef.current.get(requestId);

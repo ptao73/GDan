@@ -3,15 +3,15 @@ export const SUITS = ['S', 'H', 'C', 'D'];
 export const TABLE_SEATS = ['E', 'S', 'W', 'N'];
 
 export const RANK_VALUE = {
-  '2': 2,
-  '3': 3,
-  '4': 4,
-  '5': 5,
-  '6': 6,
-  '7': 7,
-  '8': 8,
-  '9': 9,
-  '10': 10,
+  2: 2,
+  3: 3,
+  4: 4,
+  5: 5,
+  6: 6,
+  7: 7,
+  8: 8,
+  9: 9,
+  10: 10,
   J: 11,
   Q: 12,
   K: 13,
@@ -117,9 +117,7 @@ export function createTableDeal() {
   const shuffled = shuffleCards(createFullDeck());
   const players = TABLE_SEATS.map((seat, index) => {
     const start = index * 27;
-    const cards = shuffled
-      .slice(start, start + 27)
-      .map((card) => decorateCard(card, trumpRank));
+    const cards = shuffled.slice(start, start + 27).map((card) => decorateCard(card, trumpRank));
     return {
       seat,
       cards: sortCards(cards, trumpRank)

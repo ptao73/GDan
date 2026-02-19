@@ -65,23 +65,18 @@ function toSortedHistory(records, limit) {
 }
 
 function isBombType(type) {
-  return type === 'bomb4' || type === 'bomb5' || type === 'bomb6' || type === 'bomb7' || type === 'bomb8' || type === 'tianwang';
+  return (
+    type === 'bomb4' ||
+    type === 'bomb5' ||
+    type === 'bomb6' ||
+    type === 'bomb7' ||
+    type === 'bomb8' ||
+    type === 'tianwang'
+  );
 }
 
 function countBombs(combos = []) {
   return combos.filter((combo) => isBombType(combo.type)).length;
-}
-
-function countWildcardUsage(combos = []) {
-  let used = 0;
-  for (const combo of combos) {
-    for (const card of combo.cards || []) {
-      if (card.isWildcard) {
-        used += 1;
-      }
-    }
-  }
-  return used;
 }
 
 function average(values) {
@@ -155,11 +150,17 @@ function buildStats(records) {
   const aiBombAvg = average(records.map((item) => countBombs(item.aiCombos)));
 
   const userHandsAvg = average(
-    records.map((item) => (item.userScoreDetail?.handCount ? item.userScoreDetail.handCount : item.userCombos?.length || 0))
+    records.map((item) =>
+      item.userScoreDetail?.handCount
+        ? item.userScoreDetail.handCount
+        : item.userCombos?.length || 0
+    )
   );
 
   const aiHandsAvg = average(
-    records.map((item) => (item.aiScoreDetail?.handCount ? item.aiScoreDetail.handCount : item.aiCombos?.length || 0))
+    records.map((item) =>
+      item.aiScoreDetail?.handCount ? item.aiScoreDetail.handCount : item.aiCombos?.length || 0
+    )
   );
 
   let wildcardAsSingleCount = 0;
@@ -195,7 +196,8 @@ function buildStats(records) {
     aiBombAvg: Number(aiBombAvg.toFixed(2)),
     userHandsAvg: Number(userHandsAvg.toFixed(2)),
     aiHandsAvg: Number(aiHandsAvg.toFixed(2)),
-    wildcardAsSingleRate: wildcardTotal === 0 ? 0 : Number((wildcardAsSingleCount / wildcardTotal).toFixed(2))
+    wildcardAsSingleRate:
+      wildcardTotal === 0 ? 0 : Number((wildcardAsSingleCount / wildcardTotal).toFixed(2))
   };
 
   return {
@@ -230,7 +232,7 @@ export const DataService = {
     let parsed;
     try {
       parsed = JSON.parse(jsonText);
-    } catch (error) {
+    } catch (_error) {
       throw new Error('导入失败：JSON 格式不正确');
     }
 
