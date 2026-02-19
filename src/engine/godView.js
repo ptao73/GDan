@@ -113,15 +113,23 @@ function averageSnapshot(players, role) {
   };
 }
 
-function interruptionProbability(scheme, opponentsAvg) {
+export function isEndgame(players) {
+  if (!players || players.length === 0) return false;
+  return players.some(
+    (p) => p.role === 'opponent' && p.preferred && p.preferred.handCount <= 4
+  );
+}
+
+function interruptionProbability(scheme, opponentsAvg, endgameFlag = false) {
+  const egMul = endgameFlag ? 2 : 1;
   const vulnerability =
     scheme.singleCount * 0.9 +
     scheme.handCount * 0.3 +
     Math.max(0, 4 - scheme.fireCount) * 0.9;
   const raw =
     0.16 +
-    opponentsAvg.fireCount * 0.055 +
-    opponentsAvg.keyScore * 0.018 +
+    opponentsAvg.fireCount * 0.055 * egMul +
+    opponentsAvg.keyScore * 0.018 * egMul +
     vulnerability * 0.026 -
     scheme.fireCount * 0.04 -
     scheme.keyScore * 0.03;
@@ -148,15 +156,56 @@ function backupValue(selfSnapshot, teammateSnapshot, opponentsAvg) {
   return clamp(raw, 0.05, 0.95);
 }
 
-function summarizeOptions(control, aggressive, opponentsAvg) {
-  const stableInterrupt = interruptionProbability(control, opponentsAvg);
-  const aggressiveInterrupt = interruptionProbability(aggressive, opponentsAvg);
+function summarizeOptions(control, aggressive, opponentsAvg, endgameFlag = false) {
+  const stableInterrupt = interruptionProbability(control, opponentsAvg, endgameFlag);
+  const aggressiveInterrupt = interruptionProbability(aggressive, opponentsAvg, endgameFlag);
   const stableRecapture = controlRecaptureProbability(control, opponentsAvg);
   const aggressiveRecapture = controlRecaptureProbability(aggressive, opponentsAvg);
 
   const stableEdge = stableRecapture - stableInterrupt;
   const aggressiveEdge = aggressiveRecapture - aggressiveInterrupt;
   const recommended = aggressiveEdge > stableEdge ? 'aggressive' : 'stable';
+
+  // 生成人话解释
+  const explanationParts = [];
+  const handDiff = aggressive.handCount - control.handCount;
+  const fireDiff = aggressive.fireCount - control.fireCount;
+  const interruptDiffPct = toPercent(stableInterrupt) - toPercent(aggressiveInterrupt);
+
+  if (Math.abs(handDiff) >= 2) {
+    explanationParts.push(
+      handDiff > 0
+        ? `进攻型多 ${handDiff} 手牌，出牌轮次更多`
+        : `稳健型多 ${Math.abs(handDiff)} 手牌，出牌轮次更多`
+    );
+  }
+
+  if (Math.abs(fireDiff) >= 1) {
+    explanationParts.push(
+      fireDiff > 0
+        ? `但进攻型多 ${fireDiff} 个炸弹火力`
+        : `但稳健型多 ${Math.abs(fireDiff)} 个炸弹火力`
+    );
+  }
+
+  if (Math.abs(interruptDiffPct) > 15) {
+    explanationParts.push(
+      interruptDiffPct > 0
+        ? `稳健型被闷住概率低 ${interruptDiffPct}%，更安全`
+        : `进攻型被闷住概率低 ${Math.abs(interruptDiffPct)}%，更安全`
+    );
+  }
+
+  if (opponentsAvg.fireCount > 3) {
+    explanationParts.push('对手火力强，建议优先保护自己不被管住');
+  }
+
+  const explanation =
+    explanationParts.length > 0
+      ? explanationParts.join('；') + '。'
+      : recommended === 'aggressive'
+        ? '两种方案差异不大，进攻型略有优势。'
+        : '两种方案差异不大，稳健型略有优势。';
 
   return {
     stable: {
@@ -175,7 +224,80 @@ function summarizeOptions(control, aggressive, opponentsAvg) {
     reason:
       recommended === 'aggressive'
         ? '进攻型的控场收益更高，且被闷住风险没有显著上升。'
-        : '稳健型的被闷住概率更低，综合容错更好。'
+        : '稳健型的被闷住概率更低，综合容错更好。',
+    explanation
+  };
+}
+
+export function analyzeTribute(selfCards, opponentCards, trumpRank, options = {}) {
+  const timeLimitMs = options.timeLimitMs ?? 400;
+  const maxBranch = options.maxBranch ?? 16;
+
+  if (!selfCards || selfCards.length === 0 || !opponentCards || !trumpRank) {
+    return null;
+  }
+
+  // 对手当前 baseline fireCount
+  const baselineDual = solveDualRecommendation(opponentCards, trumpRank, {
+    timeLimitMs,
+    maxBranch,
+    topK: 1
+  });
+  const baselineBest = preferredScheme(baselineDual);
+  const baselineFireCount = baselineBest
+    ? snapshotScheme(baselineBest.result).fireCount
+    : 0;
+
+  // 只分析大牌（A、K、Q）和配牌，避免遍历所有 27 张
+  const seen = new Set();
+  const candidates = selfCards.filter((card) => {
+    const key = `${card.suit}-${card.rank}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  const results = candidates.map((card) => {
+    // 自己移除该牌后的手牌
+    const selfAfter = selfCards.filter((c) => c.id !== card.id);
+    // 对手获得该牌后的手牌
+    const oppAfter = [...opponentCards, card];
+
+    const selfDual = solveDualRecommendation(selfAfter, trumpRank, {
+      timeLimitMs,
+      maxBranch,
+      topK: 1
+    });
+    const selfBest = preferredScheme(selfDual);
+    const selfFireAfter = selfBest
+      ? snapshotScheme(selfBest.result).fireCount
+      : 0;
+
+    const oppDual = solveDualRecommendation(oppAfter, trumpRank, {
+      timeLimitMs,
+      maxBranch,
+      topK: 1
+    });
+    const oppBest = preferredScheme(oppDual);
+    const oppFireAfter = oppBest
+      ? snapshotScheme(oppBest.result).fireCount
+      : 0;
+
+    return {
+      card,
+      oppFireDelta: oppFireAfter - baselineFireCount,
+      selfFireLoss: selfFireAfter,
+      risk: oppFireAfter - baselineFireCount
+    };
+  });
+
+  // 按风险排序：risk 最小的 = 最优进贡牌
+  results.sort((a, b) => a.risk - b.risk);
+
+  return {
+    best: results[0] || null,
+    worst: results[results.length - 1] || null,
+    all: results
   };
 }
 
@@ -248,6 +370,8 @@ export function analyzeGodView(
       rank: index + 1
     }));
 
+  const endgameFlag = isEndgame(evaluatedPlayers);
+
   const defaultSnapshot = {
     score: 0,
     handCount: 0,
@@ -265,14 +389,29 @@ export function analyzeGodView(
   const composition = summarizeOptions(
     selfPlayer?.options?.stable || defaultSnapshot,
     selfPlayer?.options?.aggressive || defaultSnapshot,
-    opponentAvg
+    opponentAvg,
+    endgameFlag
   );
 
-  const interruption = interruptionProbability(selfSnapshot, opponentAvg);
+  const interruption = interruptionProbability(selfSnapshot, opponentAvg, endgameFlag);
   const backup = backupValue(selfSnapshot, mateSnapshot, opponentAvg);
+
+  // 进贡分析：自己的牌 vs 威胁最大的对手
+  const topOpponent = sortedThreats.find((t) => t.role === 'opponent');
+  const topOpponentPlayer = topOpponent
+    ? evaluatedPlayers.find((p) => p.seat === topOpponent.seat)
+    : null;
+  const tribute =
+    selfPlayer && topOpponentPlayer
+      ? analyzeTribute(selfPlayer.cards, topOpponentPlayer.cards, trumpRank, {
+          timeLimitMs: Math.min(timeLimitMs, 400),
+          maxBranch: Math.min(maxBranch, 16)
+        })
+      : null;
 
   return {
     generatedAt: Date.now(),
+    endgameFlag,
     trumpRank,
     userSeat,
     teammateSeat: teammateSeatOf(userSeat),
@@ -298,6 +437,7 @@ export function analyzeGodView(
       interruptionProbability: toPercent(interruption),
       backupValue: toPercent(backup)
     },
-    composition
+    composition,
+    tribute
   };
 }

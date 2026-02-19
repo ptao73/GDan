@@ -166,7 +166,7 @@ export function useGameState() {
     error: null
   });
 
-  const { runAiSearchWithWorker, cancelPendingSearches } = useWorker();
+  const { runAiSearchWithWorker, runGodViewWithWorker, cancelPendingSearches } = useWorker();
 
   // --- 计算属性 ---
   const usedIdSet = useMemo(() => {
@@ -364,7 +364,12 @@ export function useGameState() {
     const maxBranch = GOD_VIEW_MAX_BRANCH[modeKey] || GOD_VIEW_MAX_BRANCH.balanced;
     setGodViewStatus('running');
 
-    const task = Promise.resolve().then(() =>
+    // 优先通过 Web Worker 执行，避免阻塞主线程；Worker 失败则 fallback 到主线程
+    const task = runGodViewWithWorker(nextTableDeal, {
+      userSeat: 'E',
+      timeLimitMs,
+      maxBranch
+    }).catch(() =>
       analyzeGodView(nextTableDeal, {
         userSeat: 'E',
         timeLimitMs,
@@ -1033,11 +1038,18 @@ export function useGameState() {
     }
 
     try {
-      const fallback = analyzeGodView(tableDeal, {
+      const workerOpts = {
         userSeat: 'E',
         timeLimitMs: GOD_VIEW_TIME_LIMIT_MS[aiSearchMode] || GOD_VIEW_TIME_LIMIT_MS.balanced,
         maxBranch: GOD_VIEW_MAX_BRANCH[aiSearchMode] || GOD_VIEW_MAX_BRANCH.balanced
-      });
+      };
+      // 优先 Worker，失败则 fallback 主线程
+      let fallback;
+      try {
+        fallback = await runGodViewWithWorker(tableDeal, workerOpts);
+      } catch (_workerErr) {
+        fallback = analyzeGodView(tableDeal, workerOpts);
+      }
       if (fallback) {
         setGodViewData(fallback);
         setGodViewStatus('ready');

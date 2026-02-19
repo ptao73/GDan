@@ -60,6 +60,9 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
   return (
     <article className="panel god-view-panel">
       <h2>上帝视角</h2>
+      {godViewData.endgameFlag && (
+        <p className="warn" style={{ marginBottom: '8px' }}>⚠ 残局模式 — 对手理论手数 ≤ 4，每一手牌至关重要</p>
+      )}
       <div className="god-overview-grid">
         <p>对手火力：{godViewData.overview.opponentFireTotal}</p>
         <p>队友火力：{godViewData.overview.teammateFireTotal}</p>
@@ -73,6 +76,9 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
           推荐：{godViewData.composition.recommended === 'aggressive' ? '方案B 进攻型' : '方案A 稳健型'}，
           {godViewData.composition.reason}
         </p>
+        {godViewData.composition.explanation && (
+          <p className="god-explanation">{godViewData.composition.explanation}</p>
+        )}
         <div className="god-composition-grid">
           <p className={godViewData.composition.recommended === 'stable' ? 'picked' : ''}>
             方案A 稳健型：{optionSummary(godViewData.composition.stable)}
@@ -82,6 +88,28 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
           </p>
         </div>
       </div>
+
+      {godViewData.tribute && (
+        <div className="god-tribute">
+          <h3>进贡分析</h3>
+          {godViewData.tribute.best && (
+            <p>
+              最优进贡：
+              {cardLabel(godViewData.tribute.best.card)}
+              （对手火力变化 {godViewData.tribute.best.oppFireDelta >= 0 ? '+' : ''}
+              {godViewData.tribute.best.oppFireDelta}）
+            </p>
+          )}
+          {godViewData.tribute.worst && godViewData.tribute.worst !== godViewData.tribute.best && (
+            <p className="warn">
+              最差进贡：
+              {cardLabel(godViewData.tribute.worst.card)}
+              （对手火力变化 {godViewData.tribute.worst.oppFireDelta >= 0 ? '+' : ''}
+              {godViewData.tribute.worst.oppFireDelta}）
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="god-players-grid">
         {godViewData.players.map((player) => (

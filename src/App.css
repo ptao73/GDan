@@ -432,8 +432,9 @@ button.ghost:hover {
   display: inline-flex;
   align-items: center;
   border-radius: 999px;
-  padding: 2px 8px;
-  font-size: 12px;
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 13px;
   color: #4f5562;
   border: 1px dashed rgba(115, 128, 148, 0.72);
   background: rgba(221, 232, 246, 0.32);
@@ -948,6 +949,31 @@ button.ghost:hover {
 .god-composition h3 {
   margin: 0 0 8px;
   font-size: 22px;
+}
+
+.god-explanation {
+  margin: 4px 0 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #3d4555;
+  border-radius: 8px;
+  background: rgba(240, 236, 226, 0.48);
+  border-left: 3px solid rgba(194, 175, 146, 0.72);
+}
+
+.god-tribute {
+  margin-top: 10px;
+}
+
+.god-tribute h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.god-tribute p {
+  margin: 2px 0;
+  font-size: 14px;
 }
 
 .god-composition-grid {
@@ -1465,6 +1491,15 @@ button.ghost:hover {
 
   .god-overview-grid {
     grid-template-columns: 1fr;
+  }
+
+  .ghost-hint-strip {
+    flex-direction: column;
+  }
+
+  .ghost-hint-chip {
+    width: 100%;
+    justify-content: center;
   }
 
   .god-seat h3,

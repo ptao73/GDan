@@ -86,5 +86,49 @@ export function useWorker() {
     tasksRef.current.clear();
   }
 
-  return { runAiSearchWithWorker, cancelPendingSearches };
+  function runGodViewWithWorker(tableDeal, { userSeat = 'E', timeLimitMs = 650, maxBranch = 20 } = {}) {
+    const watchdogMs = Math.max(5000, timeLimitMs * 4 + 2000);
+
+    return new Promise((resolve, reject) => {
+      const requestId = `gv-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const worker = new Worker(
+        new URL('../workers/godViewWorker.js', import.meta.url),
+        { type: 'module' }
+      );
+
+      const cleanup = () => {
+        const task = tasksRef.current.get(requestId);
+        if (!task) return;
+        clearTimeout(task.timer);
+        tasksRef.current.delete(requestId);
+        task.worker.terminate();
+      };
+
+      const timer = window.setTimeout(() => {
+        cleanup();
+        reject(new Error('God view worker timeout'));
+      }, watchdogMs);
+
+      worker.onmessage = (event) => {
+        const payload = event.data || {};
+        if (payload.requestId !== requestId) return;
+        cleanup();
+        if (payload.error) {
+          reject(new Error(payload.error));
+          return;
+        }
+        resolve(payload.result);
+      };
+
+      worker.onerror = () => {
+        cleanup();
+        reject(new Error('God view worker failed'));
+      };
+
+      tasksRef.current.set(requestId, { worker, resolve, reject, timer });
+      worker.postMessage({ requestId, tableDeal, userSeat, timeLimitMs, maxBranch });
+    });
+  }
+
+  return { runAiSearchWithWorker, runGodViewWithWorker, cancelPendingSearches };
 }
