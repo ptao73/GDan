@@ -212,6 +212,10 @@ describe('isBomb / isFireCombo', () => {
     expect(isBomb('tianwang')).toBe(true);
   });
 
+  it('straightFlush 视为炸弹', () => {
+    expect(isBomb('straightFlush')).toBe(true);
+  });
+
   it('straight 不是炸弹', () => {
     expect(isBomb('straight')).toBe(false);
   });

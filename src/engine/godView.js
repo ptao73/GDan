@@ -1,4 +1,4 @@
-import { isFireCombo } from './combos.js';
+import { isBomb } from './combos.js';
 import { compareSchemeResult, solveDualRecommendation } from './solver.js';
 
 export const SEAT_NAME = {
@@ -19,19 +19,11 @@ function toPercent(value) {
 }
 
 function countFireCombos(combos = []) {
-  return combos.filter((combo) => isFireCombo(combo.type)).length;
+  return combos.filter((combo) => isBomb(combo.type)).length;
 }
 
 function countBombCombos(combos = []) {
-  return combos.filter(
-    (combo) =>
-      combo.type === 'bomb4' ||
-      combo.type === 'bomb5' ||
-      combo.type === 'bomb6' ||
-      combo.type === 'bomb7' ||
-      combo.type === 'bomb8' ||
-      combo.type === 'tianwang'
-  ).length;
+  return combos.filter((combo) => isBomb(combo.type)).length;
 }
 
 function countSingles(combos = []) {
@@ -86,7 +78,6 @@ function snapshotScheme(result) {
 function threatScore(snapshot, role) {
   const base =
     snapshot.fireCount * 11 +
-    snapshot.bombCount * 7 +
     Math.max(0, 10 - snapshot.handCount) * 5 +
     snapshot.keyScore * 2 +
     snapshot.burstScore * 2 -
@@ -178,9 +169,7 @@ function summarizeOptions(control, aggressive, opponentsAvg, endgameFlag = false
 
   if (Math.abs(fireDiff) >= 1) {
     explanationParts.push(
-      fireDiff > 0
-        ? `但进攻型多 ${fireDiff} 个炸弹火力`
-        : `但稳健型多 ${Math.abs(fireDiff)} 个炸弹火力`
+      fireDiff > 0 ? `但进攻型多 ${fireDiff} 个炸弹` : `但稳健型多 ${Math.abs(fireDiff)} 个炸弹`
     );
   }
 
@@ -193,7 +182,7 @@ function summarizeOptions(control, aggressive, opponentsAvg, endgameFlag = false
   }
 
   if (opponentsAvg.fireCount > 3) {
-    explanationParts.push('对手火力强，建议优先保护自己不被管住');
+    explanationParts.push('对手炸弹强，建议优先保护自己不被管住');
   }
 
   const explanation =

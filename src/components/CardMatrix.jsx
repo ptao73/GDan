@@ -44,7 +44,7 @@ export default function CardMatrix({
           <div className="ghost-hint-strip" aria-label="对手牌型特征提示">
             {ghostHints.map((hint) => (
               <span key={hint.seat} className="ghost-hint-chip">
-                {hint.seatName}家 火{hint.fireCount} 炸{hint.bombCount} 手{hint.hands}
+                {hint.seatName}家 炸{hint.bombCount} 手{hint.hands}
               </span>
             ))}
           </div>

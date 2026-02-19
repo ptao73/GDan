@@ -7,6 +7,8 @@ export default function SelectionPanel({
   setSelectedTypeIndex,
   confirmGroup,
   resetSelection,
+  autoCompleteAndSubmit,
+  autoFillDisabled,
   isSolving
 }) {
   return (
@@ -15,6 +17,11 @@ export default function SelectionPanel({
       <p>
         已选牌数：<strong>{selectedCards.length}</strong>
       </p>
+      <div className="selection-autofill">
+        <button className="ghost" onClick={autoCompleteAndSubmit} disabled={autoFillDisabled}>
+          自动补全并提交（三张/对子/单张）
+        </button>
+      </div>
 
       {candidateTypes.length > 0 ? (
         <>

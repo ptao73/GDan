@@ -597,10 +597,11 @@ export function isBomb(comboType) {
     comboType === 'bomb6' ||
     comboType === 'bomb7' ||
     comboType === 'bomb8' ||
-    comboType === 'tianwang'
+    comboType === 'tianwang' ||
+    comboType === 'straightFlush'
   );
 }
 
 export function isFireCombo(comboType) {
-  return isBomb(comboType) || comboType === 'straightFlush';
+  return isBomb(comboType);
 }

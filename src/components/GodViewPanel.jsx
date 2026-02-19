@@ -26,7 +26,7 @@ function strategyText(key) {
 
 function optionSummary(option) {
   if (!option) return '--';
-  return `手${option.handCount} 火${option.fireCount} 控${option.keyScore} 闷${option.interruptionProbability}% 接风${option.controlRecapture}%`;
+  return `手${option.handCount} 炸${option.bombCount} 控${option.keyScore} 闷${option.interruptionProbability}% 接风${option.controlRecapture}%`;
 }
 
 export default function GodViewPanel({ godViewData, godViewStatus }) {
@@ -66,8 +66,8 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
         </p>
       )}
       <div className="god-overview-grid">
-        <p>对手火力：{godViewData.overview.opponentFireTotal}</p>
-        <p>队友火力：{godViewData.overview.teammateFireTotal}</p>
+        <p>对手炸弹：{godViewData.overview.opponentBombTotal}</p>
+        <p>队友炸弹：{godViewData.overview.teammateBombTotal}</p>
         <p>阻断概率：{godViewData.realtime.interruptionProbability}%</p>
         <p>接风价值：{godViewData.realtime.backupValue}%</p>
       </div>
@@ -99,7 +99,7 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
             <p>
               最优进贡：
               {cardLabel(godViewData.tribute.best.card)}
-              （对手火力变化 {godViewData.tribute.best.oppFireDelta >= 0 ? '+' : ''}
+              （对手炸弹变化 {godViewData.tribute.best.oppFireDelta >= 0 ? '+' : ''}
               {godViewData.tribute.best.oppFireDelta}）
             </p>
           )}
@@ -107,7 +107,7 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
             <p className="warn">
               最差进贡：
               {cardLabel(godViewData.tribute.worst.card)}
-              （对手火力变化 {godViewData.tribute.worst.oppFireDelta >= 0 ? '+' : ''}
+              （对手炸弹变化 {godViewData.tribute.worst.oppFireDelta >= 0 ? '+' : ''}
               {godViewData.tribute.worst.oppFireDelta}）
             </p>
           )}
@@ -124,9 +124,8 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
               <span className="god-threat">威胁 {player.threatScore}</span>
             </header>
             <p>
-              理论手数 {player.preferred.handCount} | 火力 {player.preferred.fireCount} | 炸弹{' '}
-              {player.preferred.bombCount} | 控牌 {player.preferred.keyScore} | 推荐
-              {strategyText(player.preferredStrategy)}
+              理论手数 {player.preferred.handCount} | 炸弹 {player.preferred.bombCount} | 控牌{' '}
+              {player.preferred.keyScore} | 推荐{strategyText(player.preferredStrategy)}
             </p>
             <p className="god-combo-line">
               组牌建议：

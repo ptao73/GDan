@@ -82,39 +82,19 @@ export default function App() {
             setSelectedTypeIndex={g.setSelectedTypeIndex}
             confirmGroup={g.confirmGroup}
             resetSelection={g.resetSelection}
+            autoCompleteAndSubmit={g.autoCompleteAndSubmit}
+            autoFillDisabled={g.isSolving || (g.remainingCards.length === 0 && Boolean(g.aiResult))}
             isSolving={g.isSolving}
           />
         </article>
 
         <article className="panel combos-panel">
           <h2>已组牌区</h2>
-          <div className="submit-actions">
-            <span className={`assign-state ${g.canAnalyze ? 'ok' : 'pending'}`}>
-              已分配 {g.assignedCardsCount}/27
-            </span>
-            <button
-              className="ghost"
-              onClick={g.autoCompleteSinglesAndPairs}
-              disabled={g.isSolving || g.remainingCards.length === 0}
-            >
-              自动补全单张/对子
-            </button>
-            <button onClick={g.handlePrimaryAction} disabled={g.primaryActionDisabled}>
-              {g.primaryActionLabel}
-            </button>
-          </div>
           <ComboList
             userCombos={g.userCombos}
             trumpRank={g.trumpRank}
             aiResult={g.aiResult}
-            aiComboKeySet={g.aiComboKeySet}
-            userComboKeySet={g.userComboKeySet}
-            aiHasRecommendation={g.aiHasRecommendation}
             aiStatus={g.aiStatus}
-            userScore={g.userScore}
-            aiScoreView={g.aiScoreView}
-            removeGroup={g.removeGroup}
-            isSolving={g.isSolving}
           />
         </article>
       </section>

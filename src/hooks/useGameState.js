@@ -114,6 +114,47 @@ function phaseOneSize(modeKey, profileCount) {
   return modeKey === 'fast' ? 1 : Math.min(2, profileCount);
 }
 
+function pickAutoTriple(cards, trumpRank) {
+  let picked = null;
+
+  for (let i = 0; i < cards.length - 2; i += 1) {
+    for (let j = i + 1; j < cards.length - 1; j += 1) {
+      for (let k = j + 1; k < cards.length; k += 1) {
+        const tripleCards = [cards[i], cards[j], cards[k]];
+        const definition = detectComboTypes(tripleCards, trumpRank).find(
+          (item) => item.type === 'triple'
+        );
+        if (!definition) continue;
+
+        const rankSet = new Set(tripleCards.map((card) => card.rank));
+        const sameRankScore = rankSet.size === 1 ? 2 : rankSet.size === 2 ? 1 : 0;
+        const sortedIds = [cards[i].id, cards[j].id, cards[k].id].sort((a, b) =>
+          a.localeCompare(b)
+        );
+        const idKey = sortedIds.join('|');
+        const candidate = {
+          i,
+          j,
+          k,
+          definition,
+          score: sameRankScore,
+          idKey
+        };
+
+        if (
+          !picked ||
+          candidate.score > picked.score ||
+          (candidate.score === picked.score && candidate.idKey < picked.idKey)
+        ) {
+          picked = candidate;
+        }
+      }
+    }
+  }
+
+  return picked;
+}
+
 function pickAutoPair(cards, trumpRank) {
   let picked = null;
 
@@ -166,7 +207,6 @@ export function useGameState() {
   const [aiResult, setAiResult] = useState(null);
   const [aiStatus, setAiStatus] = useState('idle');
   const [aiSearchMode, setAiSearchMode] = useState('balanced');
-  const [primaryActionMode, setPrimaryActionMode] = useState('deal');
   const [godViewEnabled, setGodViewEnabled] = useState(false);
   const [godViewStatus, setGodViewStatus] = useState('idle');
   const [godViewData, setGodViewData] = useState(null);
@@ -177,6 +217,7 @@ export function useGameState() {
   const [notice, setNotice] = useState('');
 
   const importInputRef = useRef(null);
+  const autoSubmitRef = useRef({ key: '' });
   const precomputeRef = useRef({
     dealKey: '',
     modeKey: '',
@@ -234,9 +275,8 @@ export function useGameState() {
 
   const isSolving = aiStatus === 'running';
   const assignedCardsCount = dealtCards.length - remainingCards.length;
-  const canAnalyze = assignedCardsCount === 27 && !isSolving;
-  const primaryActionLabel = primaryActionMode === 'deal' ? '新开局' : 'AI分析';
-  const primaryActionDisabled = isSolving || (primaryActionMode === 'analyze' && !canAnalyze);
+  const primaryActionLabel = '新开局';
+  const primaryActionDisabled = isSolving;
 
   const matrixCounts = useMemo(() => {
     const counts = {};
@@ -284,11 +324,10 @@ export function useGameState() {
       .map((item) => ({
         seat: item.seat,
         seatName: item.seatName,
-        fireCount: item.preferred.fireCount,
         bombCount: item.preferred.bombCount,
         hands: item.preferred.handCount
       }))
-      .sort((a, b) => b.fireCount - a.fireCount);
+      .sort((a, b) => b.bombCount - a.bombCount);
   }, [godViewData]);
 
   // --- 副作用 ---
@@ -348,6 +387,7 @@ export function useGameState() {
     setGodViewEnabled(false);
     setGodViewStatus('idle');
     setGodViewData(null);
+    autoSubmitRef.current.key = '';
   }
 
   function resetPrecomputeState() {
@@ -726,7 +766,6 @@ export function useGameState() {
     const nextTableDeal = createTableDeal();
     const eastCards = nextTableDeal.players.find((player) => player.seat === 'E')?.cards || [];
     resetRoundState(eastCards, nextTableDeal.trumpRank, nextTableDeal);
-    setPrimaryActionMode('analyze');
     kickOffPrecompute(eastCards, nextTableDeal.trumpRank, aiSearchMode, true);
     kickOffGodViewPrecompute(nextTableDeal, aiSearchMode, true);
     setNotice(`新牌局已开始，当前打几：${nextTableDeal.trumpRank}。AI 与上帝视角已后台预计算。`);
@@ -758,6 +797,7 @@ export function useGameState() {
     setUserScore(null);
     setAiResult(null);
     setAiStatus('idle');
+    autoSubmitRef.current.key = '';
   }
 
   function toggleCard(cardId) {
@@ -807,17 +847,37 @@ export function useGameState() {
     setSelectedIds([]);
   }
 
-  function autoCompleteSinglesAndPairs() {
+  async function autoCompleteAndSubmit() {
     if (isSolving) return;
     if (remainingCards.length === 0) {
-      setNotice('当前没有可自动补全的剩余牌。');
+      if (aiResult) {
+        setNotice('当前已完成组牌并给出 AI 推荐。');
+        return;
+      }
+      await submitScoring();
       return;
     }
 
     clearScoringResult();
     const pool = [...remainingCards];
     const generated = [];
+    let tripleCount = 0;
     let pairCount = 0;
+
+    while (pool.length >= 3) {
+      const nextTriple = pickAutoTriple(pool, trumpRank);
+      if (!nextTriple) break;
+
+      const tripleCards = [pool[nextTriple.i], pool[nextTriple.j], pool[nextTriple.k]];
+      const tripleCombo = createCombo(tripleCards, trumpRank, nextTriple.definition);
+      if (!tripleCombo || tripleCombo.type !== 'triple') break;
+
+      generated.push(tripleCombo);
+      tripleCount += 1;
+      pool.splice(nextTriple.k, 1);
+      pool.splice(nextTriple.j, 1);
+      pool.splice(nextTriple.i, 1);
+    }
 
     while (pool.length >= 2) {
       const nextPair = pickAutoPair(pool, trumpRank);
@@ -849,7 +909,9 @@ export function useGameState() {
     setUserCombos((prev) => [...prev, ...generated]);
     setSelectedIds([]);
     setSelectedTypeIndex(0);
-    setNotice(`已自动补全剩余牌：${pairCount} 个对子，${singleCount} 张单牌。`);
+    setNotice(
+      `已自动补全：${tripleCount} 个三张，${pairCount} 个对子，${singleCount} 张单牌。正在提交并生成 AI 推荐。`
+    );
   }
 
   function handleChangeAiSearchMode(nextMode) {
@@ -1023,22 +1085,34 @@ export function useGameState() {
     }
   }
 
-  async function handlePrimaryAction() {
+  useEffect(() => {
+    if (isSolving) return;
+    if (aiResult) return;
+    if (dealtCards.length !== 27) return;
+    if (remainingCards.length !== 0) return;
+    if (userCombos.length === 0) return;
+
+    const comboSig = userCombos
+      .map((combo) => comboKey(combo))
+      .sort((a, b) => a.localeCompare(b))
+      .join('||');
+    const submitKey = `${buildDealKey(dealtCards, trumpRank)}|${comboSig}`;
+    if (!submitKey || autoSubmitRef.current.key === submitKey) return;
+
+    autoSubmitRef.current.key = submitKey;
+    submitScoring().catch(() => {
+      // submitScoring already sets user notice on failure.
+    });
+    // submitScoring is intentionally omitted to avoid re-triggering this effect on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSolving, aiResult, dealtCards, remainingCards, userCombos, trumpRank]);
+
+  function handlePrimaryAction() {
     if (isSolving) {
       setNotice('专家正在计算中，请稍后。');
       return;
     }
-
-    if (primaryActionMode === 'deal') {
-      startNewDeal();
-      setPrimaryActionMode('analyze');
-      return;
-    }
-
-    const success = await submitScoring();
-    if (success) {
-      setPrimaryActionMode('deal');
-    }
+    startNewDeal();
   }
 
   async function exportHistory() {
@@ -1149,7 +1223,6 @@ export function useGameState() {
     aiComboKeySet,
     isSolving,
     assignedCardsCount,
-    canAnalyze,
     matrixCounts,
     rankTotals,
     jokersRemain,
@@ -1165,7 +1238,6 @@ export function useGameState() {
     godViewData,
     godViewReady,
     ghostHints,
-    primaryActionMode,
     primaryActionLabel,
     primaryActionDisabled,
     startNewDeal,
@@ -1174,7 +1246,7 @@ export function useGameState() {
     removeGroup,
     confirmGroup,
     resetSelection,
-    autoCompleteSinglesAndPairs,
+    autoCompleteAndSubmit,
     submitScoring,
     setAiSearchMode: handleChangeAiSearchMode,
     toggleGodView,
