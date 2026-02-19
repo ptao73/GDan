@@ -21,11 +21,13 @@ function compareRankVectorDesc(a = [], b = []) {
 }
 
 export function compareComboDisplayOrder(a, b) {
+  const countDelta = (b.cardCount || 0) - (a.cardCount || 0);
+  if (countDelta !== 0) return countDelta;
+
+  if (a.total !== b.total) return b.total - a.total;
+
   const rankDelta = compareRankVectorDesc(a.rankVector, b.rankVector);
   if (rankDelta !== 0) return rankDelta;
-  if (a.total !== b.total) return b.total - a.total;
-  if (a.burstScore !== b.burstScore) return b.burstScore - a.burstScore;
-  if (a.shapeScore !== b.shapeScore) return b.shapeScore - a.shapeScore;
-  if (a.keyScore !== b.keyScore) return b.keyScore - a.keyScore;
+
   return a.originIndex - b.originIndex;
 }

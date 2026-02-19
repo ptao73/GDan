@@ -835,11 +835,6 @@ button.ghost:hover {
   animation: slide-in 260ms ease;
 }
 
-.combo-list li.combo-with-action {
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-}
-
 .combo-list.ai-list li {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -850,9 +845,20 @@ button.ghost:hover {
   min-width: 0;
 }
 
+.combo-line.combo-line-with-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .combo-line > span:first-child {
   line-height: 1.4;
   word-break: break-word;
+}
+
+.combo-main-text {
+  flex: 1;
+  min-width: 0;
 }
 
 .combo-score-chip {
@@ -868,9 +874,12 @@ button.ghost:hover {
 }
 
 .combo-remove {
-  min-height: 36px;
-  padding: 6px 10px;
-  font-size: 14px;
+  min-height: 24px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1.2;
+  margin-left: 2px;
   background: #fff7ea;
   color: #6b3821;
   border-color: rgba(194, 154, 95, 0.7);

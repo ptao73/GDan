@@ -11,6 +11,7 @@ function buildSortableItems(combos, trumpRank) {
       return {
         combo,
         originIndex: index,
+        cardCount: combo.cards?.length || 0,
         total: score.total,
         shapeScore: score.shapeScore,
         burstScore: score.burstScore,
@@ -56,22 +57,19 @@ function ComboColumn({
             const key = comboKey(item.combo);
             const category = comboCategory(item);
             return (
-              <li
-                key={`${key}-${item.originIndex}`}
-                className={`combo-${category}${canRemove ? ' combo-with-action' : ''}`}
-              >
-                <div className="combo-line">
-                  <span>{comboText(item)}</span>
+              <li key={`${key}-${item.originIndex}`} className={`combo-${category}`}>
+                <div className={`combo-line${canRemove ? ' combo-line-with-action' : ''}`}>
+                  <span className="combo-main-text">{comboText(item)}</span>
+                  {canRemove ? (
+                    <button
+                      className="ghost combo-remove"
+                      onClick={() => onRemove(item.originIndex)}
+                      disabled={removeDisabled}
+                    >
+                      拆
+                    </button>
+                  ) : null}
                 </div>
-                {canRemove ? (
-                  <button
-                    className="ghost combo-remove"
-                    onClick={() => onRemove(item.originIndex)}
-                    disabled={removeDisabled}
-                  >
-                    拆牌
-                  </button>
-                ) : null}
               </li>
             );
           })

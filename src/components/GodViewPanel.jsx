@@ -46,6 +46,7 @@ function buildSeatComboItems(player, trumpRank) {
       return {
         combo,
         originIndex: index,
+        cardCount: combo.cards?.length || 0,
         total: score.total,
         shapeScore: score.shapeScore,
         burstScore: score.burstScore,
