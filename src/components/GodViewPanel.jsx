@@ -1,5 +1,6 @@
 import { cardLabel } from '../engine/cards.js';
 import { scoreComboNoRound } from '../engine/scoring.js';
+import { comboRankVector, compareComboDisplayOrder } from '../utils/comboDisplay.js';
 
 function comboLabel(combo) {
   if (!combo) return '';
@@ -48,16 +49,11 @@ function buildSeatComboItems(player, trumpRank) {
         total: score.total,
         shapeScore: score.shapeScore,
         burstScore: score.burstScore,
-        keyScore: score.keyScore
+        keyScore: score.keyScore,
+        rankVector: comboRankVector(combo)
       };
     })
-    .sort((a, b) => {
-      if (a.total !== b.total) return b.total - a.total;
-      if (a.burstScore !== b.burstScore) return b.burstScore - a.burstScore;
-      if (a.shapeScore !== b.shapeScore) return b.shapeScore - a.shapeScore;
-      if (a.keyScore !== b.keyScore) return b.keyScore - a.keyScore;
-      return a.originIndex - b.originIndex;
-    });
+    .sort(compareComboDisplayOrder);
 }
 
 function comboLineText(item) {

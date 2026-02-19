@@ -835,6 +835,11 @@ button.ghost:hover {
   animation: slide-in 260ms ease;
 }
 
+.combo-list li.combo-with-action {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+}
+
 .combo-list.ai-list li {
   grid-template-columns: minmax(0, 1fr);
 }
@@ -860,6 +865,21 @@ button.ghost:hover {
   color: #5a4b37;
   border: 1px solid rgba(190, 171, 141, 0.72);
   background: #f8f2e7;
+}
+
+.combo-remove {
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 14px;
+  background: #fff7ea;
+  color: #6b3821;
+  border-color: rgba(194, 154, 95, 0.7);
+}
+
+.combo-remove:hover {
+  background: #fbe5c0;
+  color: #5a2c19;
+  border-color: rgba(183, 136, 67, 0.8);
 }
 
 .combo-empty {
@@ -1000,7 +1020,7 @@ button.ghost:hover {
 
 .god-players-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
 }
 

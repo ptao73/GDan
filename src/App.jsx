@@ -95,6 +95,8 @@ export default function App() {
             trumpRank={g.trumpRank}
             aiResult={g.aiResult}
             aiStatus={g.aiStatus}
+            removeGroup={g.removeGroup}
+            isSolving={g.isSolving}
           />
         </article>
       </section>

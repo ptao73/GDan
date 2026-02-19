@@ -1,6 +1,7 @@
 import { cardLabel } from '../engine/cards.js';
 import { comboKey } from '../engine/combos.js';
 import { scoreComboNoRound, scoreScheme } from '../engine/scoring.js';
+import { comboRankVector, compareComboDisplayOrder } from '../utils/comboDisplay.js';
 import SolvingIndicator from './SolvingIndicator.jsx';
 
 function buildSortableItems(combos, trumpRank) {
@@ -13,16 +14,11 @@ function buildSortableItems(combos, trumpRank) {
         total: score.total,
         shapeScore: score.shapeScore,
         burstScore: score.burstScore,
-        keyScore: score.keyScore
+        keyScore: score.keyScore,
+        rankVector: comboRankVector(combo)
       };
     })
-    .sort((a, b) => {
-      if (a.total !== b.total) return b.total - a.total;
-      if (a.burstScore !== b.burstScore) return b.burstScore - a.burstScore;
-      if (a.shapeScore !== b.shapeScore) return b.shapeScore - a.shapeScore;
-      if (a.keyScore !== b.keyScore) return b.keyScore - a.keyScore;
-      return a.originIndex - b.originIndex;
-    });
+    .sort(compareComboDisplayOrder);
 }
 
 function comboText(item) {
@@ -38,7 +34,16 @@ function comboCategory(item) {
   return 'shape';
 }
 
-function ComboColumn({ title, items, emptyText, showLoading = false }) {
+function ComboColumn({
+  title,
+  items,
+  emptyText,
+  showLoading = false,
+  onRemove = null,
+  removeDisabled = false
+}) {
+  const canRemove = typeof onRemove === 'function';
+
   return (
     <section className="combo-column">
       <h3>{title}</h3>
@@ -51,10 +56,22 @@ function ComboColumn({ title, items, emptyText, showLoading = false }) {
             const key = comboKey(item.combo);
             const category = comboCategory(item);
             return (
-              <li key={`${key}-${item.originIndex}`} className={`combo-${category}`}>
+              <li
+                key={`${key}-${item.originIndex}`}
+                className={`combo-${category}${canRemove ? ' combo-with-action' : ''}`}
+              >
                 <div className="combo-line">
                   <span>{comboText(item)}</span>
                 </div>
+                {canRemove ? (
+                  <button
+                    className="ghost combo-remove"
+                    onClick={() => onRemove(item.originIndex)}
+                    disabled={removeDisabled}
+                  >
+                    拆牌
+                  </button>
+                ) : null}
               </li>
             );
           })
@@ -64,7 +81,14 @@ function ComboColumn({ title, items, emptyText, showLoading = false }) {
   );
 }
 
-export default function ComboList({ userCombos, trumpRank, aiResult, aiStatus }) {
+export default function ComboList({
+  userCombos,
+  trumpRank,
+  aiResult,
+  aiStatus,
+  removeGroup,
+  isSolving
+}) {
   const sortedUserItems = buildSortableItems(userCombos, trumpRank);
   const sortedAiItems = aiResult ? buildSortableItems(aiResult.combos || [], trumpRank) : [];
   const userTotal = scoreScheme(userCombos, trumpRank).total;
@@ -76,6 +100,8 @@ export default function ComboList({ userCombos, trumpRank, aiResult, aiStatus })
           title={`我的组牌（总分 ${userTotal}）`}
           items={sortedUserItems}
           emptyText="尚未成组。"
+          onRemove={removeGroup}
+          removeDisabled={isSolving}
         />
 
         <ComboColumn

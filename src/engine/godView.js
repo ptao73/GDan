@@ -70,7 +70,7 @@ function snapshotScheme(result) {
     fireCount: countFireCombos(combos),
     bombCount: countBombCombos(combos),
     singleCount: countSingles(combos),
-    combos: combos.slice(0, 6),
+    combos: combos.slice(),
     rawResult: result || null
   };
 }
