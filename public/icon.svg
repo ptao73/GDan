@@ -1,14 +1,82 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
   <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0d3b47" />
-      <stop offset="100%" stop-color="#c44536" />
-    </linearGradient>
+    <radialGradient id="bgVignette" cx="50%" cy="46%" r="72%">
+      <stop offset="0%" stop-color="#821A16"/>
+      <stop offset="72%" stop-color="#781613"/>
+      <stop offset="100%" stop-color="#6F120F"/>
+    </radialGradient>
+
+    <radialGradient id="goldHeart" cx="42%" cy="34%" r="70%">
+      <stop offset="0%" stop-color="#EAD39A"/>
+      <stop offset="55%" stop-color="#D4B26A"/>
+      <stop offset="100%" stop-color="#B88F3F"/>
+    </radialGradient>
+
+    <radialGradient id="heartHighlight" cx="36%" cy="26%" r="55%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="60%" stop-color="#FFFFFF" stop-opacity="0.00"/>
+    </radialGradient>
+
+    <filter id="softShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#000000" flood-opacity="0.18"/>
+    </filter>
+
+    <filter id="strokeSoft" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="1.1" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="88" fill="url(#g)" />
-  <g fill="#f4efe6">
-    <rect x="96" y="128" width="320" height="256" rx="28" />
-    <path d="M212 202h34l13 25 13-25h34l-30 52v56h-34v-56z" fill="#0d3b47" />
-    <text x="256" y="360" text-anchor="middle" font-size="52" font-family="Georgia, serif" fill="#0d3b47">掼蛋</text>
+
+  <rect x="0" y="0" width="1024" height="1024" fill="url(#bgVignette)"/>
+
+  <g filter="url(#softShadow)">
+    <path
+      d="M512 700
+         C430 640, 360 590, 360 500
+         C360 430, 410 380, 480 380
+         C520 380, 548 400, 512 440
+         C476 400, 504 380, 544 380
+         C614 380, 664 430, 664 500
+         C664 590, 594 640, 512 700 Z"
+      fill="url(#goldHeart)"
+    />
+    <path
+      d="M512 700
+         C430 640, 360 590, 360 500
+         C360 430, 410 380, 480 380
+         C520 380, 548 400, 512 440
+         C476 400, 504 380, 544 380
+         C614 380, 664 430, 664 500
+         C664 590, 594 640, 512 700 Z"
+      fill="url(#heartHighlight)"
+    />
   </g>
+
+  <path
+    d="M 274 690
+       C 330 610, 410 560, 494 540
+       C 610 512, 690 460, 748 360"
+    fill="none"
+    stroke="#C29A4A"
+    stroke-width="48"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.92"
+    filter="url(#strokeSoft)"
+  />
+
+  <path
+    d="M 286 684
+       C 340 610, 420 566, 500 548
+       C 612 522, 692 474, 742 372"
+    fill="none"
+    stroke="#E0C88C"
+    stroke-width="22"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    opacity="0.48"
+  />
 </svg>

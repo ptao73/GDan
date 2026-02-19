@@ -2,11 +2,9 @@ import './App.css';
 import { useGameState } from './hooks/useGameState.js';
 import Header from './components/Header.jsx';
 import CardMatrix from './components/CardMatrix.jsx';
-import SelectionPanel from './components/SelectionPanel.jsx';
 import ComboList from './components/ComboList.jsx';
 import StatsPanel from './components/StatsPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
-import BottomBar from './components/BottomBar.jsx';
 import GodViewPanel from './components/GodViewPanel.jsx';
 
 export default function App() {
@@ -94,17 +92,6 @@ export default function App() {
               ghostHints={g.ghostHints}
             />
           </div>
-          <SelectionPanel
-            selectedCards={g.selectedCards}
-            candidateTypes={g.candidateTypes}
-            selectedTypeIndex={g.selectedTypeIndex}
-            setSelectedTypeIndex={g.setSelectedTypeIndex}
-            confirmGroup={g.confirmGroup}
-            resetSelection={g.resetSelection}
-            autoCompleteAndSubmit={g.autoCompleteAndSubmit}
-            autoFillDisabled={g.isSolving || (g.remainingCards.length === 0 && Boolean(g.aiResult))}
-            isSolving={g.isSolving}
-          />
         </article>
 
         <article className="panel combos-panel">
@@ -130,15 +117,6 @@ export default function App() {
         <StatsPanel stats={g.stats} />
         <HistoryPanel history={g.history} />
       </section>
-
-      <BottomBar
-        assignedCardsCount={g.assignedCardsCount}
-        isSolving={g.isSolving}
-        handlePrimaryAction={g.handlePrimaryAction}
-        primaryActionLabel={g.primaryActionLabel}
-        primaryActionDisabled={g.primaryActionDisabled}
-        aiSearchModeLabel={g.aiSearchModeLabel}
-      />
     </main>
   );
 }
