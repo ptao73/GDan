@@ -6,6 +6,14 @@ import { compareSchemeResult, solveBestScheme, solveDualRecommendation } from '.
 import { analyzeGodView } from '../engine/godView.js';
 import { DataService } from '../services/dataService.js';
 import { useWorker } from './useWorker.js';
+import {
+  HAND_CARD_COUNT,
+  createTableDealFromEastCards,
+  materializeHandCards,
+  normalizeTrumpRank,
+  parseHandImportJson,
+  parseHandSpecsFromText
+} from '../utils/handImport.js';
 
 const MATRIX_RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 const AI_MODE_STORAGE_KEY = 'guandan-ai-search-mode';
@@ -215,8 +223,13 @@ export function useGameState() {
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
   const [notice, setNotice] = useState('');
+  const [isImportingHand, setIsImportingHand] = useState(false);
 
   const importInputRef = useRef(null);
+  const handJsonInputRef = useRef(null);
+  const handPhotoInputRef = useRef(null);
+  const handCameraInputRef = useRef(null);
+  const tesseractLoaderRef = useRef(null);
   const autoSubmitRef = useRef({ key: '' });
   const precomputeRef = useRef({
     dealKey: '',
@@ -1135,6 +1148,137 @@ export function useGameState() {
     importInputRef.current?.click();
   }
 
+  function applyImportedHandSpecs(cardSpecs, incomingTrumpRank, sourceLabel) {
+    if (!Array.isArray(cardSpecs) || cardSpecs.length !== HAND_CARD_COUNT) {
+      throw new Error(
+        `导入失败：手牌必须是 ${HAND_CARD_COUNT} 张，当前识别到 ${cardSpecs?.length || 0} 张。`
+      );
+    }
+
+    const nextTrumpRank = normalizeTrumpRank(incomingTrumpRank, trumpRank);
+    const eastCards = materializeHandCards(cardSpecs, nextTrumpRank);
+    const nextTableDeal = createTableDealFromEastCards(eastCards, nextTrumpRank);
+
+    cancelPendingSearches('导入手牌后，取消旧搜索。');
+    resetPrecomputeState();
+    resetGodViewPrecomputeState();
+    resetRoundState(eastCards, nextTrumpRank, nextTableDeal);
+    kickOffPrecompute(eastCards, nextTrumpRank, aiSearchMode, true);
+    kickOffGodViewPrecompute(nextTableDeal, aiSearchMode, true);
+    setNotice(`${sourceLabel}成功：已导入 27 张手牌，当前打几：${nextTrumpRank}。`);
+  }
+
+  function loadTesseractRuntime() {
+    if (typeof window === 'undefined') {
+      return Promise.reject(new Error('当前环境不支持图片识别。'));
+    }
+
+    if (window.Tesseract?.recognize) {
+      return Promise.resolve(window.Tesseract);
+    }
+
+    if (tesseractLoaderRef.current) {
+      return tesseractLoaderRef.current;
+    }
+
+    tesseractLoaderRef.current = new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-tesseract-cdn="1"]');
+      if (existing) {
+        existing.addEventListener('load', () => {
+          if (window.Tesseract?.recognize) {
+            resolve(window.Tesseract);
+          } else {
+            reject(new Error('图片识别组件加载失败。'));
+          }
+        });
+        existing.addEventListener('error', () => {
+          reject(new Error('图片识别组件加载失败，请检查网络后重试。'));
+        });
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      script.async = true;
+      script.dataset.tesseractCdn = '1';
+      script.onload = () => {
+        if (window.Tesseract?.recognize) {
+          resolve(window.Tesseract);
+        } else {
+          reject(new Error('图片识别组件初始化失败。'));
+        }
+      };
+      script.onerror = () => {
+        reject(new Error('图片识别组件加载失败，请检查网络后重试。'));
+      };
+      document.head.appendChild(script);
+    }).catch((error) => {
+      tesseractLoaderRef.current = null;
+      throw error;
+    });
+
+    return tesseractLoaderRef.current;
+  }
+
+  function openHandJsonImportDialog() {
+    if (isSolving || isImportingHand) return;
+    handJsonInputRef.current?.click();
+  }
+
+  function openHandPhotoImportDialog() {
+    if (isSolving || isImportingHand) return;
+    handPhotoInputRef.current?.click();
+  }
+
+  function openHandCameraImportDialog() {
+    if (isSolving || isImportingHand) return;
+    handCameraInputRef.current?.click();
+  }
+
+  async function importHandJson(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImportingHand(true);
+    try {
+      const text = await file.text();
+      const { trumpRank: importedTrumpRank, cardSpecs } = parseHandImportJson(text);
+      applyImportedHandSpecs(cardSpecs, importedTrumpRank, 'JSON 导入');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : 'JSON 导入失败。');
+    } finally {
+      if (handJsonInputRef.current) {
+        handJsonInputRef.current.value = '';
+      }
+      setIsImportingHand(false);
+    }
+  }
+
+  async function importHandFromImage(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImportingHand(true);
+    setNotice('正在识别图片中的手牌，请稍候...');
+    try {
+      const tesseract = await loadTesseractRuntime();
+      const result = await tesseract.recognize(file, 'eng+chi_sim');
+      const recognizedText = result?.data?.text || '';
+      const { trumpRank: recognizedTrumpRank, cardSpecs } = parseHandSpecsFromText(recognizedText);
+      applyImportedHandSpecs(cardSpecs, recognizedTrumpRank, '图片识别导入');
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '图片识别导入失败。');
+    } finally {
+      if (handPhotoInputRef.current) {
+        handPhotoInputRef.current.value = '';
+      }
+      if (handCameraInputRef.current) {
+        handCameraInputRef.current.value = '';
+      }
+      setIsImportingHand(false);
+    }
+  }
+
   async function importHistory(event) {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -1216,12 +1360,16 @@ export function useGameState() {
     stats,
     notice,
     importInputRef,
+    handJsonInputRef,
+    handPhotoInputRef,
+    handCameraInputRef,
     remainingCards,
     selectedCards,
     candidateTypes,
     userComboKeySet,
     aiComboKeySet,
     isSolving,
+    isImportingHand,
     assignedCardsCount,
     matrixCounts,
     rankTotals,
@@ -1252,6 +1400,11 @@ export function useGameState() {
     toggleGodView,
     exportHistory,
     openImportDialog,
-    importHistory
+    importHistory,
+    openHandJsonImportDialog,
+    openHandPhotoImportDialog,
+    openHandCameraImportDialog,
+    importHandJson,
+    importHandFromImage
   };
 }

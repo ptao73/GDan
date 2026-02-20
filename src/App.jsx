@@ -13,6 +13,7 @@ export default function App() {
     !g.isSolving && g.selectedCards.length > 0 && g.candidateTypes.length > 0;
   const autoCompleteDisabledFromHeader =
     g.isSolving || (g.remainingCards.length === 0 && Boolean(g.aiResult));
+  const handImportDisabled = g.isSolving || g.isImportingHand;
 
   const scrollToStats = () => {
     const target = document.getElementById('stats-section');
@@ -45,10 +46,31 @@ export default function App() {
           <div className="cards-main">
             <div className="cards-main-tools">
               <button className="ghost" onClick={g.exportHistory} disabled={g.isSolving}>
-                导出JSON
+                导出历史JSON
               </button>
               <button className="ghost" onClick={g.openImportDialog} disabled={g.isSolving}>
-                导入JSON
+                导入历史JSON
+              </button>
+              <button
+                className="ghost"
+                onClick={g.openHandJsonImportDialog}
+                disabled={handImportDisabled}
+              >
+                导入手牌JSON
+              </button>
+              <button
+                className="ghost"
+                onClick={g.openHandCameraImportDialog}
+                disabled={handImportDisabled}
+              >
+                拍照识别导入
+              </button>
+              <button
+                className="ghost"
+                onClick={g.openHandPhotoImportDialog}
+                disabled={handImportDisabled}
+              >
+                上传照片识别
               </button>
               <label className="mode-selector cards-mode-selector">
                 <span>AI搜索档位</span>
@@ -81,6 +103,28 @@ export default function App() {
                 type="file"
                 accept="application/json"
                 onChange={g.importHistory}
+              />
+              <input
+                ref={g.handJsonInputRef}
+                className="hidden-input"
+                type="file"
+                accept="application/json"
+                onChange={g.importHandJson}
+              />
+              <input
+                ref={g.handPhotoInputRef}
+                className="hidden-input"
+                type="file"
+                accept="image/*"
+                onChange={g.importHandFromImage}
+              />
+              <input
+                ref={g.handCameraInputRef}
+                className="hidden-input"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={g.importHandFromImage}
               />
             </div>
             <CardMatrix
