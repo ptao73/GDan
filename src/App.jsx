@@ -28,9 +28,15 @@ export default function App() {
         onAutoComplete={g.autoCompleteAndSubmit}
         onConfirmGroup={g.confirmGroup}
         onViewStats={scrollToStats}
+        onExportHistory={g.exportHistory}
+        onImportHistory={g.openImportDialog}
+        onImportHandJson={g.openHandJsonImportDialog}
+        onImportHandCamera={g.openHandCameraImportDialog}
+        onImportHandPhoto={g.openHandPhotoImportDialog}
         newDealDisabled={g.primaryActionDisabled}
         autoCompleteDisabled={autoCompleteDisabledFromHeader}
         confirmDisabled={!canConfirmFromHeader}
+        dataToolsDisabled={handImportDisabled}
         trumpRank={g.trumpRank}
       />
 
@@ -45,33 +51,6 @@ export default function App() {
         <article className="panel cards-panel">
           <div className="cards-main">
             <div className="cards-main-tools">
-              <button className="ghost" onClick={g.exportHistory} disabled={g.isSolving}>
-                导出历史JSON
-              </button>
-              <button className="ghost" onClick={g.openImportDialog} disabled={g.isSolving}>
-                导入历史JSON
-              </button>
-              <button
-                className="ghost"
-                onClick={g.openHandJsonImportDialog}
-                disabled={handImportDisabled}
-              >
-                导入手牌JSON
-              </button>
-              <button
-                className="ghost"
-                onClick={g.openHandCameraImportDialog}
-                disabled={handImportDisabled}
-              >
-                拍照识别导入
-              </button>
-              <button
-                className="ghost"
-                onClick={g.openHandPhotoImportDialog}
-                disabled={handImportDisabled}
-              >
-                上传照片识别
-              </button>
               <label className="mode-selector cards-mode-selector">
                 <span>AI搜索档位</span>
                 <select
