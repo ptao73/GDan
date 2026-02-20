@@ -9,8 +9,9 @@
 
 .hero {
   --hero-lightness-shift: 0%;
-  position: relative;
-  z-index: 1;
+  position: sticky;
+  top: max(0px, env(safe-area-inset-top));
+  z-index: 40;
   display: flex;
   justify-content: center;
   align-items: stretch;
