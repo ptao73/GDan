@@ -1,5 +1,5 @@
 import { isBomb } from './combos.js';
-import { compareSchemeResult, solveDualRecommendation } from './solver.js';
+import { solveBestScheme } from './solver.js';
 
 export const SEAT_NAME = {
   E: '东',
@@ -47,15 +47,6 @@ function resolveRole(seat, userSeat) {
   if (seat === userSeat) return 'self';
   if (seat === teammateSeatOf(userSeat)) return 'teammate';
   return 'opponent';
-}
-
-function preferredScheme(dualResult) {
-  if (!dualResult?.ceiling && !dualResult?.control) return null;
-  if (!dualResult?.ceiling) return { key: 'stable', result: dualResult.control };
-  if (!dualResult?.control) return { key: 'aggressive', result: dualResult.ceiling };
-  return compareSchemeResult(dualResult.ceiling, dualResult.control) < 0
-    ? { key: 'aggressive', result: dualResult.ceiling }
-    : { key: 'stable', result: dualResult.control };
 }
 
 function snapshotScheme(result) {
@@ -143,44 +134,17 @@ function backupValue(selfSnapshot, teammateSnapshot, opponentsAvg) {
   return clamp(raw, 0.05, 0.95);
 }
 
-function summarizeOptions(control, aggressive, opponentsAvg, endgameFlag = false) {
-  const stableInterrupt = interruptionProbability(control, opponentsAvg, endgameFlag);
-  const aggressiveInterrupt = interruptionProbability(aggressive, opponentsAvg, endgameFlag);
-  const stableRecapture = controlRecaptureProbability(control, opponentsAvg);
-  const aggressiveRecapture = controlRecaptureProbability(aggressive, opponentsAvg);
+function summarizeComposition(scheme, opponentsAvg, endgameFlag = false) {
+  const interrupt = interruptionProbability(scheme, opponentsAvg, endgameFlag);
+  const recapture = controlRecaptureProbability(scheme, opponentsAvg);
 
-  const stableEdge = stableRecapture - stableInterrupt;
-  const aggressiveEdge = aggressiveRecapture - aggressiveInterrupt;
-  const recommended = aggressiveEdge > stableEdge ? 'aggressive' : 'stable';
-
-  // 生成人话解释
   const explanationParts = [];
-  const handDiff = aggressive.handCount - control.handCount;
-  const fireDiff = aggressive.fireCount - control.fireCount;
-  const interruptDiffPct = toPercent(stableInterrupt) - toPercent(aggressiveInterrupt);
-
-  if (Math.abs(handDiff) >= 2) {
-    explanationParts.push(
-      handDiff > 0
-        ? `进攻型多 ${handDiff} 手牌，出牌轮次更多`
-        : `稳健型多 ${Math.abs(handDiff)} 手牌，出牌轮次更多`
-    );
+  if (scheme.fireCount >= 3) {
+    explanationParts.push(`火力充足（${scheme.fireCount} 个炸弹）`);
   }
-
-  if (Math.abs(fireDiff) >= 1) {
-    explanationParts.push(
-      fireDiff > 0 ? `但进攻型多 ${fireDiff} 个炸弹` : `但稳健型多 ${Math.abs(fireDiff)} 个炸弹`
-    );
+  if (scheme.singleCount >= 4) {
+    explanationParts.push(`孤张较多（${scheme.singleCount} 张），容易被管住`);
   }
-
-  if (Math.abs(interruptDiffPct) > 15) {
-    explanationParts.push(
-      interruptDiffPct > 0
-        ? `稳健型被闷住概率低 ${interruptDiffPct}%，更安全`
-        : `进攻型被闷住概率低 ${Math.abs(interruptDiffPct)}%，更安全`
-    );
-  }
-
   if (opponentsAvg.fireCount > 3) {
     explanationParts.push('对手炸弹强，建议优先保护自己不被管住');
   }
@@ -188,28 +152,12 @@ function summarizeOptions(control, aggressive, opponentsAvg, endgameFlag = false
   const explanation =
     explanationParts.length > 0
       ? explanationParts.join('；') + '。'
-      : recommended === 'aggressive'
-        ? '两种方案差异不大，进攻型略有优势。'
-        : '两种方案差异不大，稳健型略有优势。';
+      : '当前组牌方案较为均衡。';
 
   return {
-    stable: {
-      ...control,
-      interruptionProbability: toPercent(stableInterrupt),
-      controlRecapture: toPercent(stableRecapture),
-      edge: Number(stableEdge.toFixed(3))
-    },
-    aggressive: {
-      ...aggressive,
-      interruptionProbability: toPercent(aggressiveInterrupt),
-      controlRecapture: toPercent(aggressiveRecapture),
-      edge: Number(aggressiveEdge.toFixed(3))
-    },
-    recommended,
-    reason:
-      recommended === 'aggressive'
-        ? '进攻型的控场收益更高，且被闷住风险没有显著上升。'
-        : '稳健型的被闷住概率更低，综合容错更好。',
+    ...scheme,
+    interruptionProbability: toPercent(interrupt),
+    controlRecapture: toPercent(recapture),
     explanation
   };
 }
@@ -223,13 +171,12 @@ export function analyzeTribute(selfCards, opponentCards, trumpRank, options = {}
   }
 
   // 对手当前 baseline fireCount
-  const baselineDual = solveDualRecommendation(opponentCards, trumpRank, {
+  const baselineResult = solveBestScheme(opponentCards, trumpRank, {
     timeLimitMs,
     maxBranch,
     topK: 1
   });
-  const baselineBest = preferredScheme(baselineDual);
-  const baselineFireCount = baselineBest ? snapshotScheme(baselineBest.result).fireCount : 0;
+  const baselineFireCount = snapshotScheme(baselineResult).fireCount;
 
   // 只分析大牌（A、K、Q）和配牌，避免遍历所有 27 张
   const seen = new Set();
@@ -246,21 +193,19 @@ export function analyzeTribute(selfCards, opponentCards, trumpRank, options = {}
     // 对手获得该牌后的手牌
     const oppAfter = [...opponentCards, card];
 
-    const selfDual = solveDualRecommendation(selfAfter, trumpRank, {
+    const selfResult = solveBestScheme(selfAfter, trumpRank, {
       timeLimitMs,
       maxBranch,
       topK: 1
     });
-    const selfBest = preferredScheme(selfDual);
-    const selfFireAfter = selfBest ? snapshotScheme(selfBest.result).fireCount : 0;
+    const selfFireAfter = snapshotScheme(selfResult).fireCount;
 
-    const oppDual = solveDualRecommendation(oppAfter, trumpRank, {
+    const oppResult = solveBestScheme(oppAfter, trumpRank, {
       timeLimitMs,
       maxBranch,
       topK: 1
     });
-    const oppBest = preferredScheme(oppDual);
-    const oppFireAfter = oppBest ? snapshotScheme(oppBest.result).fireCount : 0;
+    const oppFireAfter = snapshotScheme(oppResult).fireCount;
 
     return {
       card,
@@ -301,16 +246,13 @@ export function analyzeGodView(
   }
 
   const evaluatedPlayers = players.map((player) => {
-    const dual = solveDualRecommendation(player.cards, trumpRank, {
+    const result = solveBestScheme(player.cards, trumpRank, {
       timeLimitMs,
       maxBranch,
       topK: 2
     });
-    const best = preferredScheme(dual);
     const role = resolveRole(player.seat, userSeat);
-    const stable = snapshotScheme(dual.control);
-    const aggressive = snapshotScheme(dual.ceiling);
-    const preferred = best?.key === 'aggressive' ? aggressive : stable;
+    const preferred = snapshotScheme(result);
 
     return {
       seat: player.seat,
@@ -318,12 +260,7 @@ export function analyzeGodView(
       role,
       relativePos: seatDistance(userSeat, player.seat),
       cards: player.cards,
-      preferredStrategy: best?.key || 'stable',
       preferred,
-      options: {
-        stable,
-        aggressive
-      },
       threatScore: 0
     };
   });
@@ -364,12 +301,7 @@ export function analyzeGodView(
 
   const selfSnapshot = selfPlayer?.preferred || defaultSnapshot;
   const mateSnapshot = teammatePlayer?.preferred || defaultSnapshot;
-  const composition = summarizeOptions(
-    selfPlayer?.options?.stable || defaultSnapshot,
-    selfPlayer?.options?.aggressive || defaultSnapshot,
-    opponentAvg,
-    endgameFlag
-  );
+  const composition = summarizeComposition(selfSnapshot, opponentAvg, endgameFlag);
 
   const interruption = interruptionProbability(selfSnapshot, opponentAvg, endgameFlag);
   const backup = backupValue(selfSnapshot, mateSnapshot, opponentAvg);

@@ -13,9 +13,10 @@ describe('analyzeGodView', () => {
     expect(result.players).toHaveLength(4);
     expect(typeof result.endgameFlag).toBe('boolean');
     expect(result.composition).toBeDefined();
-    expect(typeof result.composition.recommended).toBe('string');
     expect(typeof result.composition.explanation).toBe('string');
     expect(result.composition.explanation.length).toBeGreaterThan(0);
+    expect(typeof result.composition.interruptionProbability).toBe('number');
+    expect(typeof result.composition.controlRecapture).toBe('number');
   });
 
   it('trumpRank 缺失时返回 null', () => {

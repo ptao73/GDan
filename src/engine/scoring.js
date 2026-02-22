@@ -157,8 +157,7 @@ export function scoreComboNoRound(combo, trumpRank) {
   };
 }
 
-// 1D: 策略参数 — 'balanced'(默认) / 'ceiling'(高上限) / 'control'(高控制)
-export function scoreScheme(combos, trumpRank, strategy = 'balanced') {
+export function scoreScheme(combos, trumpRank) {
   let shapeScore = 0;
   let burstScore = 0;
   let keyScore = 0;
@@ -183,26 +182,7 @@ export function scoreScheme(combos, trumpRank, strategy = 'balanced') {
   const roundScore = roundCorrection(handCount);
   const isoP = isolationPenalty(combos, trumpRank);
 
-  // 策略权重调整
-  let burstWeight = 1;
-  let keyWeight = 1;
-  let handBonus = 0;
-
-  if (strategy === 'ceiling') {
-    // 高上限模式：火力分权重加倍
-    burstWeight = 2;
-  } else if (strategy === 'control') {
-    // 高控制模式：控牌分权重加倍 + 少手数额外加分
-    keyWeight = 2;
-    if (handCount <= 7) {
-      handBonus = 2;
-    } else if (handCount <= 9) {
-      handBonus = 1;
-    }
-  }
-
-  const total =
-    shapeScore + burstScore * burstWeight + keyScore * keyWeight + roundScore + handBonus - isoP;
+  const total = shapeScore + burstScore + keyScore + roundScore - isoP;
 
   return {
     total,
@@ -212,8 +192,7 @@ export function scoreScheme(combos, trumpRank, strategy = 'balanced') {
       keyScore,
       roundScore,
       handCount,
-      isolationPenalty: isoP,
-      strategy
+      isolationPenalty: isoP
     },
     comboBreakdown
   };

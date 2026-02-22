@@ -131,10 +131,10 @@ describe('scoreScheme', () => {
     expect(result).toHaveProperty('total');
     expect(result).toHaveProperty('detail');
     expect(result.detail).toHaveProperty('handCount', 3);
-    expect(result.detail).toHaveProperty('strategy', 'balanced');
+    expect(result.detail).not.toHaveProperty('strategy');
   });
 
-  it('ceiling 策略火力分加倍', () => {
+  it('总分 = 牌型分 + 火力分 + 控牌分 + 轮次修正 - 孤立弱牌惩罚', () => {
     const combos = [
       makeCombo('bomb4', 'A', [
         ['S', 'A'],
@@ -143,15 +143,10 @@ describe('scoreScheme', () => {
         ['D', 'A']
       ])
     ];
-    const balanced = scoreScheme(combos, '2', 'balanced');
-    const ceiling = scoreScheme(combos, '2', 'ceiling');
-    expect(ceiling.total).toBeGreaterThan(balanced.total);
-  });
-
-  it('control 策略控牌分加倍', () => {
-    const combos = [makeCombo('single', 'BJ', [['JOKER', 'BJ']])];
-    const balanced = scoreScheme(combos, '2', 'balanced');
-    const control = scoreScheme(combos, '2', 'control');
-    expect(control.total).toBeGreaterThan(balanced.total);
+    const result = scoreScheme(combos, '2');
+    const d = result.detail;
+    expect(result.total).toBe(
+      d.shapeScore + d.burstScore + d.keyScore + d.roundScore - d.isolationPenalty
+    );
   });
 });

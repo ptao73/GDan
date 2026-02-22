@@ -1,7 +1,7 @@
 // AI 搜索与预计算 Hook
 import { useEffect, useRef, useState } from 'react';
 import { scoreScheme } from '../engine/scoring.js';
-import { solveBestScheme, solveDualRecommendation } from '../engine/solver.js';
+import { solveBestScheme } from '../engine/solver.js';
 import { DataService } from '../services/dataService.js';
 import { useWorker } from './useWorker.js';
 import {
@@ -82,20 +82,18 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
   }
 
   async function runSingleProfileSearch(cards, rank, profile, options = {}) {
-    const dualMode = Boolean(options.dualMode);
     const solverOptions = {
       timeLimitMs: profile.timeLimitMs,
       maxBranch: profile.maxBranch,
       topK: 3,
       targetScore: options.targetScore,
-      stopAfterSurpass: options.stopAfterSurpass,
-      dualMode
+      stopAfterSurpass: options.stopAfterSurpass
     };
 
     if (profile.mode === 'worker') {
       try {
         const result = await runAiSearchWithWorker(cards, rank, solverOptions);
-        return { result, usedFallback: false, dualMode };
+        return { result, usedFallback: false };
       } catch (error) {
         const message = error instanceof Error ? error.message : '';
         if (
@@ -106,33 +104,17 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
         ) {
           throw error;
         }
-        if (dualMode) {
-          const fallback = solveDualRecommendation(cards, rank, {
-            ...solverOptions,
-            timeLimitMs: Math.max(2200, profile.timeLimitMs - 400)
-          });
-          return { result: fallback, usedFallback: true, dualMode };
-        }
         const fallback = solveBestScheme(cards, rank, {
           ...solverOptions,
           timeLimitMs: Math.max(2200, profile.timeLimitMs - 400)
         });
-        return { result: fallback, usedFallback: true, dualMode: false };
+        return { result: fallback, usedFallback: true };
       }
-    }
-
-    if (dualMode) {
-      return {
-        result: solveDualRecommendation(cards, rank, solverOptions),
-        usedFallback: false,
-        dualMode
-      };
     }
 
     return {
       result: solveBestScheme(cards, rank, solverOptions),
-      usedFallback: false,
-      dualMode: false
+      usedFallback: false
     };
   }
 
@@ -145,11 +127,9 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
     stopAfterSurpass,
     initialBest,
     initialAttempts,
-    dualMode,
     trackProgress
   }) {
     let bestResult = initialBest || null;
-    let dualResult = null;
     let usedFallback = false;
     let attemptCount = initialAttempts || 0;
     let surpassedTarget =
@@ -168,42 +148,23 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
 
       const {
         result,
-        usedFallback: profileFallback,
-        dualMode: isDual
+        usedFallback: profileFallback
       } = await runSingleProfileSearch(cards, rank, profile, {
         targetScore,
-        stopAfterSurpass,
-        dualMode
+        stopAfterSurpass
       });
 
       if (profileFallback) {
         usedFallback = true;
       }
 
-      if (isDual && result.ceiling && result.control) {
-        dualResult = result;
-        const better = isBetterResult(result.ceiling, result.control)
-          ? result.ceiling
-          : result.control;
-        if (!bestResult || isBetterResult(better, bestResult)) {
-          bestResult = better;
-        }
+      if (!bestResult || isBetterResult(result, bestResult)) {
+        bestResult = result;
+      }
 
-        if (typeof targetScore === 'number') {
-          if (result.ceiling.score > targetScore || result.control.score > targetScore) {
-            surpassedTarget = true;
-            if (stopAfterSurpass) break;
-          }
-        }
-      } else {
-        if (!bestResult || isBetterResult(result, bestResult)) {
-          bestResult = result;
-        }
-
-        if (typeof targetScore === 'number' && result.score > targetScore) {
-          surpassedTarget = true;
-          if (stopAfterSurpass) break;
-        }
+      if (typeof targetScore === 'number' && result.score > targetScore) {
+        surpassedTarget = true;
+        if (stopAfterSurpass) break;
       }
     }
 
@@ -220,8 +181,7 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
         searchAttempts: attemptCount,
         surpassedUser: typeof targetScore === 'number' ? resolvedBest.score > targetScore : false,
         searchMode: modeKey,
-        searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced,
-        dualResult
+        searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced
       },
       usedFallback,
       surpassedTarget
@@ -258,7 +218,6 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
       stopAfterSurpass: false,
       initialBest: null,
       initialAttempts: 0,
-      dualMode: true,
       trackProgress: false
     });
 
@@ -370,7 +329,6 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
       stopAfterSurpass: true,
       initialBest: null,
       initialAttempts: 0,
-      dualMode: true,
       trackProgress: true
     });
 
@@ -394,7 +352,6 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
       stopAfterSurpass: false,
       initialBest: phaseOne.ai,
       initialAttempts: phaseOne.ai.searchAttempts || 0,
-      dualMode: true,
       trackProgress: true
     });
 

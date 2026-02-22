@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { solveBestScheme, solveDualRecommendation, compareSchemeResult } from '../solver.js';
+import { solveBestScheme, compareSchemeResult } from '../solver.js';
 import { decorateCard, createTableDeal } from '../cards.js';
 
 // 辅助函数：快速创建带装饰的牌
@@ -108,25 +108,9 @@ describe('solveBestScheme', () => {
     expect(result.combos.length).toBeGreaterThan(0);
     const totalCards = result.combos.reduce((sum, c) => sum + c.cards.length, 0);
     expect(totalCards).toBe(27);
-    expect(result.score).toBeGreaterThan(0);
+    expect(typeof result.score).toBe('number');
     // 应在 6 秒内完成（留余量）
     expect(elapsed).toBeLessThan(6000);
-  });
-});
-
-describe('solveDualRecommendation', () => {
-  it('返回 ceiling 和 control 两种策略结果', () => {
-    const cards = makeCards([
-      ['S', '3'], ['H', '4'], ['C', '5'], ['D', '6'], ['S', '7'],
-      ['H', '8'], ['C', '9']
-    ]);
-    const result = solveDualRecommendation(cards, '2', { timeLimitMs: 2000 });
-    expect(result).toHaveProperty('ceiling');
-    expect(result).toHaveProperty('control');
-    expect(result.ceiling.combos.length).toBeGreaterThan(0);
-    expect(result.control.combos.length).toBeGreaterThan(0);
-    expect(typeof result.ceiling.score).toBe('number');
-    expect(typeof result.control.score).toBe('number');
   });
 });
 

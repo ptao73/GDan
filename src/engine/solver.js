@@ -13,7 +13,6 @@
  * - candidateEstimate: 启发式评分 = 单组得分×8 + 牌数×2 + 类型优先级 - 拆炸惩罚 - 百搭效用惩罚
  * - beamSearch: 波束搜索核心，含超时保护
  * - solveBestScheme: 整合贪心+波束，返回最终 topK 方案
- * - solveDualRecommendation: 分别用 ceiling（上限）和 control（控制）策略各搜一次
  */
 import { cardSortValue, isJoker, isWildcardCard, rankValue, STANDARD_RANKS } from './cards.js';
 import { COMBO_LABELS, comboPriority, detectComboTypes, isFireCombo } from './combos.js';
@@ -431,8 +430,8 @@ function countSplitBombCards(combos, bombProtection) {
   };
 }
 
-function buildSchemeResult(combos, trumpRank, bombProtection, strategy) {
-  const scored = scoreScheme(combos, trumpRank, strategy);
+function buildSchemeResult(combos, trumpRank, bombProtection) {
+  const scored = scoreScheme(combos, trumpRank);
   const protectionView = countSplitBombCards(combos, bombProtection);
 
   return {
@@ -548,7 +547,6 @@ function beamSearch(sorted, trumpRank, bombProtection, options) {
   const maxBranch = options.maxBranch || DEFAULT_MAX_BRANCH;
   const beamWidth = options.beamWidth || Math.max(8, Math.floor(maxBranch * 0.6));
   const deadline = options.deadline;
-  const strategy = options.strategy || 'balanced';
 
   // 每个 beam state: { combos, remaining, partialScore }
   let beam = [
@@ -631,7 +629,7 @@ function beamSearch(sorted, trumpRank, bombProtection, options) {
       const greedy = greedyBaseline(state.remaining, trumpRank, maxBranch, bombProtection);
       finalCombos = [...state.combos, ...greedy.combos];
     }
-    const result = buildSchemeResult(finalCombos, trumpRank, bombProtection, strategy);
+    const result = buildSchemeResult(finalCombos, trumpRank, bombProtection);
     results.push(result);
   }
 
@@ -653,7 +651,6 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
   const topK = Math.max(1, Math.min(10, Math.floor(options.topK ?? DEFAULT_TOP_K)));
   const targetScore = typeof options.targetScore === 'number' ? options.targetScore : null;
   const stopAfterSurpass = Boolean(options.stopAfterSurpass) && targetScore !== null;
-  const strategy = options.strategy || 'balanced';
   const beamWidth = options.beamWidth || Math.max(8, Math.floor(maxBranch * 0.6));
   const deadline = startAt + timeLimitMs;
 
@@ -694,7 +691,7 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
   const baseline = greedyBaseline(sorted, trumpRank, maxBranch, bombProtection);
   const topSeen = new Set();
   const topResults = [];
-  const baselineResult = buildSchemeResult(baseline.combos, trumpRank, bombProtection, strategy);
+  const baselineResult = buildSchemeResult(baseline.combos, trumpRank, bombProtection);
   pushTopResult(topResults, topSeen, baselineResult, topK);
 
   let timedOut = false;
@@ -706,8 +703,7 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
     const beamResult = beamSearch(sorted, trumpRank, bombProtection, {
       maxBranch,
       beamWidth,
-      deadline,
-      strategy
+      deadline
     });
 
     searchNodes += beamResult.searchNodes;
@@ -736,31 +732,5 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
     searchNodes,
     topResults: publicTop,
     alternatives: publicTop.slice(1)
-  };
-}
-
-/**
- * 双策略推荐：将总时间平分，分别用 ceiling（追求最高分上限）和 control（追求控牌能力）
- * 两种评分策略各搜索一次，返回两个独立的最优方案供用户选择。
- */
-export function solveDualRecommendation(cards, trumpRank, options = {}) {
-  const timeLimitMs = options.timeLimitMs ?? DEFAULT_TIME_LIMIT;
-  const halfTime = Math.floor(timeLimitMs / 2);
-
-  const ceilingResult = solveBestScheme(cards, trumpRank, {
-    ...options,
-    timeLimitMs: halfTime,
-    strategy: 'ceiling'
-  });
-
-  const controlResult = solveBestScheme(cards, trumpRank, {
-    ...options,
-    timeLimitMs: halfTime,
-    strategy: 'control'
-  });
-
-  return {
-    ceiling: ceilingResult,
-    control: controlResult
   };
 }

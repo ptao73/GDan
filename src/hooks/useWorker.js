@@ -71,8 +71,7 @@ export function useWorker() {
         maxBranch,
         topK,
         targetScore,
-        stopAfterSurpass,
-        dualMode: Boolean(options.dualMode)
+        stopAfterSurpass
       });
     });
   }

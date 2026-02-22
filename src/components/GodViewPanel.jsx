@@ -8,11 +8,6 @@ function roleText(role) {
   return '对手';
 }
 
-function optionSummary(option) {
-  if (!option) return '--';
-  return `手${option.handCount} 炸${option.bombCount} 控${option.keyScore} 闷${option.interruptionProbability}% 接风${option.controlRecapture}%`;
-}
-
 function comboCategory(item) {
   if (item.burstScore > 0) return 'fire';
   if (item.keyScore > 0) return 'key';
@@ -138,23 +133,13 @@ export default function GodViewPanel({ godViewData, godViewStatus, godViewStale,
         </div>
 
         <div className="god-composition">
-          <h3>组牌最优化对比（A/B）</h3>
-          <p className="hint">
-            推荐：
-            {godViewData.composition.recommended === 'aggressive' ? '方案B 进攻型' : '方案A 稳健型'}
-            ，{godViewData.composition.reason}
+          <h3>组牌分析</h3>
+          <p>
+            手{godViewData.composition.handCount} 炸{godViewData.composition.bombCount} 控{godViewData.composition.keyScore} 闷{godViewData.composition.interruptionProbability}% 接风{godViewData.composition.controlRecapture}%
           </p>
           {godViewData.composition.explanation && (
             <p className="god-explanation">{godViewData.composition.explanation}</p>
           )}
-          <div className="god-composition-grid">
-            <p className={godViewData.composition.recommended === 'stable' ? 'picked' : ''}>
-              方案A 稳健型：{optionSummary(godViewData.composition.stable)}
-            </p>
-            <p className={godViewData.composition.recommended === 'aggressive' ? 'picked' : ''}>
-              方案B 进攻型：{optionSummary(godViewData.composition.aggressive)}
-            </p>
-          </div>
         </div>
 
         {godViewData.tribute && (
