@@ -1,5 +1,5 @@
 import { cardLabel } from '../engine/cards.js';
-import { comboKey } from '../engine/combos.js';
+import { comboKey, isBomb } from '../engine/combos.js';
 import { scoreComboNoRound, scoreScheme } from '../engine/scoring.js';
 import { comboRankVector, compareComboDisplayOrder } from '../utils/comboDisplay.js';
 import SolvingIndicator from './SolvingIndicator.jsx';
@@ -13,9 +13,6 @@ function buildSortableItems(combos, trumpRank) {
         originIndex: index,
         cardCount: combo.cards?.length || 0,
         total: score.total,
-        shapeScore: score.shapeScore,
-        burstScore: score.burstScore,
-        keyScore: score.keyScore,
         rankVector: comboRankVector(combo)
       };
     })
@@ -28,8 +25,8 @@ function comboText(item) {
 }
 
 function comboCategory(item) {
-  if (item.burstScore > 0) return 'fire';
-  if (item.keyScore > 0) return 'key';
+  if (isBomb(item.combo.type)) return 'fire';
+  if (item.combo.type === 'single' && item.total > 0) return 'key';
   if (item.combo.type === 'pair') return 'pair';
   if (item.combo.type === 'single') return 'single';
   return 'shape';
