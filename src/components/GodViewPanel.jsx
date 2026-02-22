@@ -1,4 +1,5 @@
 import { cardLabel } from '../engine/cards.js';
+import { isBomb } from '../engine/combos.js';
 import { scoreComboNoRound } from '../engine/scoring.js';
 import { comboRankVector, compareComboDisplayOrder } from '../utils/comboDisplay.js';
 
@@ -9,8 +10,8 @@ function roleText(role) {
 }
 
 function comboCategory(item) {
-  if (item.burstScore > 0) return 'fire';
-  if (item.keyScore > 0) return 'key';
+  if (isBomb(item.combo.type)) return 'fire';
+  if (item.combo.type === 'single' && item.total > 0) return 'key';
   if (item.combo.type === 'pair') return 'pair';
   if (item.combo.type === 'single') return 'single';
   return 'shape';
@@ -25,9 +26,6 @@ function buildSeatComboItems(player, trumpRank) {
         originIndex: index,
         cardCount: combo.cards?.length || 0,
         total: score.total,
-        shapeScore: score.shapeScore,
-        burstScore: score.burstScore,
-        keyScore: score.keyScore,
         rankVector: comboRankVector(combo)
       };
     })

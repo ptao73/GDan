@@ -51,13 +51,25 @@ function resolveRole(seat, userSeat) {
 
 function snapshotScheme(result) {
   const combos = result?.combos || [];
+  const breakdown = result?.comboBreakdown || [];
   const detail = result?.detail || {};
+
+  // 从 comboBreakdown 派生炸弹得分和控牌得分（供威胁模型使用）
+  let bombScore = 0;
+  let controlScore = 0;
+  for (const item of breakdown) {
+    if (isBomb(item.type)) {
+      bombScore += item.score;
+    } else if (item.type === 'single' && item.score > 0) {
+      controlScore += item.score;
+    }
+  }
+
   return {
     score: result?.score ?? 0,
     handCount: detail.handCount ?? combos.length,
-    shapeScore: detail.shapeScore ?? 0,
-    burstScore: detail.burstScore ?? 0,
-    keyScore: detail.keyScore ?? 0,
+    burstScore: bombScore,
+    keyScore: controlScore,
     fireCount: countFireCombos(combos),
     bombCount: countBombCombos(combos),
     singleCount: countSingles(combos),

@@ -485,24 +485,6 @@ export function compareSchemeResult(a, b) {
     return bFire - aFire;
   }
 
-  const aBurst = a.detail?.burstScore ?? Number.NEGATIVE_INFINITY;
-  const bBurst = b.detail?.burstScore ?? Number.NEGATIVE_INFINITY;
-  if (aBurst !== bBurst) {
-    return bBurst - aBurst;
-  }
-
-  const aShape = a.detail?.shapeScore ?? Number.NEGATIVE_INFINITY;
-  const bShape = b.detail?.shapeScore ?? Number.NEGATIVE_INFINITY;
-  if (aShape !== bShape) {
-    return bShape - aShape;
-  }
-
-  const aKey = a.detail?.keyScore ?? Number.NEGATIVE_INFINITY;
-  const bKey = b.detail?.keyScore ?? Number.NEGATIVE_INFINITY;
-  if (aKey !== bKey) {
-    return bKey - aKey;
-  }
-
   const aSig = a.signature || schemeKey(a.combos || []);
   const bSig = b.signature || schemeKey(b.combos || []);
   return aSig.localeCompare(bSig);
@@ -662,11 +644,8 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
       combos: [],
       score: 0,
       detail: {
-        shapeScore: 0,
-        burstScore: 0,
-        keyScore: 0,
-        roundScore: 0,
-        handCount: 0
+        handCount: 0,
+        turnScore: 0
       },
       comboBreakdown: [],
       splitBombCards: 0,
