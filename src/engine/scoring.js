@@ -66,7 +66,7 @@ function keyCardScore(combo, trumpRank) {
 
   if (combo.type === 'pair') {
     const rank = combo.mainRank;
-    if (rank === 'A') return 2;
+    if (rank === 'A') return 1;
     if (rank === 'K') return 1;
     if (rank === trumpRank) return 1;
     return 0;

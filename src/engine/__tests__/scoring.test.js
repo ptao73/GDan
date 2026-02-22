@@ -72,7 +72,7 @@ describe('scoreComboNoRound', () => {
       ['H', 'A']
     ]);
     const result = scoreComboNoRound(combo, '2');
-    expect(result.keyScore).toBe(2);
+    expect(result.keyScore).toBe(1);
   });
 });
 
