@@ -1855,6 +1855,86 @@ button.ghost:hover {
   }
 }
 
+/* OCR 审查面板 */
+.ocr-review-panel h2 {
+  font-size: 24px;
+}
+
+.ocr-review-info {
+  color: #5a4b37;
+  font-size: 14px;
+}
+
+.ocr-review-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 10px 0;
+}
+
+.ocr-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(194, 175, 146, 0.76);
+  background: rgba(255, 253, 248, 0.96);
+  font-size: 14px;
+  font-weight: 600;
+  color: #3b2b1e;
+}
+
+.ocr-tag-remove {
+  min-height: 20px;
+  min-width: 20px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  background: rgba(204, 82, 63, 0.12);
+  color: #a52f24;
+  border: 1px solid rgba(204, 82, 63, 0.3);
+  cursor: pointer;
+}
+
+.ocr-tag-remove:hover {
+  background: rgba(204, 82, 63, 0.25);
+}
+
+.ocr-review-add {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+.ocr-review-add select {
+  border: 1px solid rgba(189, 166, 132, 0.72);
+  background: rgba(255, 252, 247, 0.96);
+  color: #433526;
+  border-radius: 8px;
+  padding: 6px 8px;
+  min-height: 36px;
+}
+
+.ocr-review-add button {
+  min-height: 36px;
+  padding: 4px 12px;
+  font-size: 13px;
+}
+
+.ocr-review-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ocr-review-actions button:first-child {
+  flex: 1;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

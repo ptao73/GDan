@@ -1,3 +1,20 @@
+/**
+ * solver.js — 掼蛋组牌搜索引擎
+ *
+ * 整体搜索策略：
+ * 1. 贪心基线（greedyBaseline）：每步取当前最高评估分的候选牌型，快速得到一个可行解。
+ * 2. 波束搜索（beamSearch）：维护 beamWidth 个最优部分解并行展开，
+ *    每层对每个状态生成候选，按 beamScore（部分得分 + 剩余质量估算 + 轮次修正）排序后
+ *    保留 top-beamWidth 个继续搜索。超时后将未完成的状态用贪心补全。
+ * 3. topK 结果：所有方案去重后按 compareSchemeResult 排序，保留前 K 个。
+ *
+ * 关键函数：
+ * - buildCandidatePool: 以 anchor 牌为中心，按优先级收集候选池（同 rank > 百搭 > 同花色 > 近 rank > 王 > 其余）
+ * - candidateEstimate: 启发式评分 = 单组得分×8 + 牌数×2 + 类型优先级 - 拆炸惩罚 - 百搭效用惩罚
+ * - beamSearch: 波束搜索核心，含超时保护
+ * - solveBestScheme: 整合贪心+波束，返回最终 topK 方案
+ * - solveDualRecommendation: 分别用 ceiling（上限）和 control（控制）策略各搜一次
+ */
 import { cardSortValue, isJoker, isWildcardCard, rankValue, STANDARD_RANKS } from './cards.js';
 import { COMBO_LABELS, comboPriority, detectComboTypes, isFireCombo } from './combos.js';
 import {
@@ -70,6 +87,16 @@ function cyclicRankDistance(rankA, rankB) {
   return Math.min(diff, 13 - diff);
 }
 
+/**
+ * 构建候选池：以 anchor 牌为中心，按以下优先级收集最多 MAX_POOL_SIZE 张牌：
+ * 1. anchor 自身
+ * 2. 同 rank 的牌（便于组成对子/炸弹）
+ * 3. 百搭牌（逢人配，可替代任意 rank）
+ * 4. 同花色的牌（便于组同花顺）
+ * 5. rank 距离 ≤ 4 的牌（便于组顺子）
+ * 6. 大小王
+ * 7. 其余牌
+ */
 function buildCandidatePool(remaining, anchor, trumpRank) {
   const ordered = [];
   const seen = new Set();
@@ -223,7 +250,14 @@ function splitBombPenalty(combo, bombProtection) {
   return involved * BOMB_SPLIT_PENALTY_PER_CARD;
 }
 
-// 3D: 改进 candidateEstimate — 加入百搭效用惩罚因子
+/**
+ * 启发式评分：对单个候选牌型的价值进行估算。
+ * - component.total * 8：单组得分权重最高，鼓励选择高分牌型
+ * - combo.cards.length * 2：鼓励消耗更多牌（减少手数）
+ * - comboPriority：按牌型等级加分（炸弹 > 顺子 > 三条 > 对子 > 单张）
+ * - splitPenalty：如果拆散了潜在炸弹中的牌，扣分
+ * - wcPenalty * 4：百搭牌用于低价值牌型时扣分（鼓励将百搭用于高价值组合）
+ */
 function candidateEstimate(combo, component, bombProtection, trumpRank) {
   const splitPenalty = splitBombPenalty(combo, bombProtection);
   const wcPenalty = trumpRank ? wildcardUtilityPenalty(combo, trumpRank) : 0;
@@ -325,7 +359,12 @@ function greedyBaseline(cards, trumpRank, maxBranch, bombProtection) {
   };
 }
 
-// 3A: 剩余牌质量快速估算
+/**
+ * 剩余牌质量快速估算：用于波束搜索中评估部分解的"未来潜力"。
+ * - 控牌加分：大小王(+3/+2)、百搭(+2)、A(+1)
+ * - 结构加分：4张同rank(+8，炸弹潜力)、3张(+3)、2张(+1)
+ * - 孤张低牌扣分：rank值<8 的单张(-1)
+ */
 function remainingQualityEstimate(remaining, trumpRank) {
   if (remaining.length === 0) return 0;
 
@@ -496,7 +535,15 @@ function pushTopResult(topResults, topSeen, candidate, topK) {
   }
 }
 
-// 3B: 波束搜索实现 — 维护 beamWidth 个最优部分解，逐层展开
+/**
+ * 波束搜索（Beam Search）：
+ * 维护 beamWidth 个最优部分解，逐层展开。每一层：
+ * 1. 对每个活跃状态（还有剩余牌），生成候选牌型
+ * 2. 每个状态只展开 top-expandLimit 个候选（控制搜索宽度）
+ * 3. 按 beamScore 排序后保留 top-beamWidth 个进入下一层
+ * 4. 超时保护：检测到超时后立即停止展开，将未完成状态用贪心补全
+ * 返回 { results: 完整方案列表, searchNodes: 展开节点数, timedOut: 是否超时 }
+ */
 function beamSearch(sorted, trumpRank, bombProtection, options) {
   const maxBranch = options.maxBranch || DEFAULT_MAX_BRANCH;
   const beamWidth = options.beamWidth || Math.max(8, Math.floor(maxBranch * 0.6));
@@ -591,7 +638,14 @@ function beamSearch(sorted, trumpRank, bombProtection, options) {
   return { results, searchNodes, timedOut };
 }
 
-// 3C: 整合波束搜索到 solveBestScheme
+/**
+ * 整体搜索流程：
+ * 1. 对手牌按排序值排序
+ * 2. 构建炸弹保护信息（哪些牌参与潜在炸弹）
+ * 3. 先用贪心基线得到初始解
+ * 4. 再用波束搜索寻找更优解
+ * 5. 合并去重后返回 topK 方案，附带超时/耗时/搜索节点等元信息
+ */
 export function solveBestScheme(cards, trumpRank, options = {}) {
   const startAt = nowMs();
   const timeLimitMs = options.timeLimitMs ?? DEFAULT_TIME_LIMIT;
@@ -685,7 +739,10 @@ export function solveBestScheme(cards, trumpRank, options = {}) {
   };
 }
 
-// 4A: 双策略推荐 — 分别用 ceiling 和 control 策略各跑一次
+/**
+ * 双策略推荐：将总时间平分，分别用 ceiling（追求最高分上限）和 control（追求控牌能力）
+ * 两种评分策略各搜索一次，返回两个独立的最优方案供用户选择。
+ */
 export function solveDualRecommendation(cards, trumpRank, options = {}) {
   const timeLimitMs = options.timeLimitMs ?? DEFAULT_TIME_LIMIT;
   const halfTime = Math.floor(timeLimitMs / 2);

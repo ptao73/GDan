@@ -44,7 +44,7 @@ function comboLineText(item) {
   return `${item.combo.label}（${item.total}分）：${cards}`;
 }
 
-export default function GodViewPanel({ godViewData, godViewStatus }) {
+export default function GodViewPanel({ godViewData, godViewStatus, godViewStale, onRefresh }) {
   if (godViewStatus === 'running') {
     return (
       <article className="panel god-view-panel">
@@ -75,6 +75,16 @@ export default function GodViewPanel({ godViewData, godViewStatus }) {
   return (
     <article className="panel god-view-panel">
       <h2>上帝视角</h2>
+      {godViewStale && (
+        <p className="warn" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          组牌已变化，当前分析可能不准确
+          {onRefresh && (
+            <button className="ghost" onClick={onRefresh} style={{ fontSize: '0.85em' }}>
+              刷新分析
+            </button>
+          )}
+        </p>
+      )}
       {godViewData.endgameFlag && (
         <p className="warn" style={{ marginBottom: '8px' }}>
           ⚠ 残局模式 — 对手理论手数 ≤ 4，每一手牌至关重要

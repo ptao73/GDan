@@ -326,11 +326,39 @@ export function parseHandSpecsFromText(rawText) {
   };
 }
 
+/**
+ * OCR 智能去重：同一张牌的左上角和右下角各被识别一次，导致重复。
+ * 按 suit-rank 统计出现次数，推断实际张数。
+ */
+export function deduplicateOcrSpecs(cardSpecs) {
+  // 统计每张牌出现次数
+  const countMap = new Map();
+  for (const spec of cardSpecs) {
+    const key = `${spec.suit}-${spec.rank}`;
+    countMap.set(key, (countMap.get(key) || 0) + 1);
+  }
+
+  // 推断实际张数并展开
+  const result = [];
+  for (const [key, count] of countMap) {
+    // 2 次 → 1 张（最常见：左上+右下）
+    // 3~4 次 → 2 张（双副牌确实拿到 2 张）
+    // 1 次 → 1 张
+    const actual = Math.min(Math.ceil(count / 2), 2);
+    const [suit, rank] = key.split('-');
+    for (let i = 0; i < actual; i++) {
+      result.push({ suit, rank });
+    }
+  }
+
+  return result;
+}
+
 function makePoolKey(suit, rank) {
   return `${suit}-${rank}`;
 }
 
-function toReadableCard(spec) {
+export function toReadableCard(spec) {
   if (spec.suit === 'JOKER') {
     if (spec.rank === 'BJ') return '大王';
     if (spec.rank === 'SJ') return '小王';

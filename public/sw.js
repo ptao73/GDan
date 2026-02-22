@@ -1,7 +1,14 @@
-const CACHE_NAME = 'guandan-trainer-v2';
+const CACHE_NAME = 'guandan-trainer-v3';
 
 // 预缓存的核心资源（无 hash 文件）
-const PRECACHE = ['/', '/index.html', '/manifest.webmanifest', '/icon.svg'];
+const PRECACHE = [
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/icon.svg',
+  '/ornaments/dragon-left.png',
+  '/ornaments/peal.png'
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE)));

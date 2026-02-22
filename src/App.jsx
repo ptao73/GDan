@@ -6,6 +6,7 @@ import ComboList from './components/ComboList.jsx';
 import StatsPanel from './components/StatsPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
 import GodViewPanel from './components/GodViewPanel.jsx';
+import OcrReviewPanel from './components/OcrReviewPanel.jsx';
 
 export default function App() {
   const g = useGameState();
@@ -34,6 +35,15 @@ export default function App() {
         <p key={g.notice} className="notice">
           {g.notice}
         </p>
+      ) : null}
+
+      {/* OCR 审查编辑面板 */}
+      {g.ocrReview ? (
+        <OcrReviewPanel
+          ocrReview={g.ocrReview}
+          onConfirm={g.confirmOcrReview}
+          onCancel={g.cancelOcrReview}
+        />
       ) : null}
 
       <section className="layout-grid main-grid">
@@ -91,6 +101,7 @@ export default function App() {
             trumpRank={g.trumpRank}
             aiResult={g.aiResult}
             aiStatus={g.aiStatus}
+            aiSearchProgress={g.aiSearchProgress}
             removeGroup={g.removeGroup}
             isSolving={g.isSolving}
           />
@@ -99,7 +110,12 @@ export default function App() {
 
       {g.godViewEnabled ? (
         <section className="layout-grid main-grid">
-          <GodViewPanel godViewData={g.godViewData} godViewStatus={g.godViewStatus} />
+          <GodViewPanel
+            godViewData={g.godViewData}
+            godViewStatus={g.godViewStatus}
+            godViewStale={g.godViewStale}
+            onRefresh={g.refreshGodView}
+          />
         </section>
       ) : null}
 

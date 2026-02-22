@@ -1,3 +1,20 @@
+/**
+ * combos.js — 掼蛋牌型检测引擎
+ *
+ * 概述：
+ * 本模块负责识别 11 种掼蛋牌型：
+ *   单张、对子、三条、三带二、顺子(5张)、木板(3×2连对)、
+ *   钢板(2×3连三)、同花顺、4~8 张炸弹、天王炸(双大小王)。
+ *
+ * 性能策略 — 位掩码加速：
+ *   顺子/木板/钢板等顺序牌型需要匹配 A-2-3-…-K-A 的连续 rank 窗口。
+ *   为避免逐张比较，将每张牌的 rank 映射到 14-bit 位掩码（A 占 bit0 和 bit13），
+ *   通过 AND 运算快速排除不可能的 candidate，再做精确检查。
+ *
+ * 百搭牌（逢人配）处理：
+ *   红桃打几对应的牌作为万能替身，可替代任意 rank 参与组牌。
+ *   splitCards() 将手牌分为百搭牌和固定牌两组，匹配时只需计算固定牌的缺口是否 ≤ 百搭数。
+ */
 import { STANDARD_RANKS, SUITS, isJoker, isWildcardCard, rankValue } from './cards.js';
 
 export const COMBO_LABELS = {
@@ -45,6 +62,11 @@ for (let i = 0; i < LINEAR_RANKS.length; i += 1) {
 // A 同时在位置 0 和 13，用 index 0 和 13 都映射
 // 这里选择保留最后一次赋值(13)，但 A 在 candidate 里会通过 candidateMask 正确处理
 
+/**
+ * 预计算指定长度的顺序候选列表。
+ * 在 LINEAR_RANKS (A-2-3-…-K-A) 上滑动窗口，生成所有可能的连续 rank 序列，
+ * 并为每个序列预计算位掩码（mask），供 matchSequencePattern 做快速排除。
+ */
 function buildSequenceCandidates(length) {
   const list = [];
   for (let i = 0; i <= LINEAR_RANKS.length - length; i += 1) {
@@ -65,7 +87,12 @@ const STEEL_CANDIDATES = buildSequenceCandidates(2);
 
 const JOKER_RANKS = new Set(['SJ', 'BJ']);
 
-// 2B: 快速统计函数 — 用 Uint8Array 做 rank 计数，同时生成 presence mask
+/**
+ * 快速统计函数：用 Uint8Array 做 rank 计数，同时生成 presence mask。
+ * counts[i] = 第 i 个 LINEAR_RANKS 位置上的牌数量
+ * mask = 14-bit 整数，bit i 置 1 表示该位置有牌存在
+ * 用于 matchSequencePattern 的快速排除阶段。
+ */
 function rankPresenceMask(cards) {
   const counts = new Uint8Array(14); // 对应 LINEAR_RANKS 14 个位置
   let mask = 0;
@@ -86,6 +113,11 @@ function isJokerRank(rank) {
   return JOKER_RANKS.has(rank);
 }
 
+/**
+ * 将手牌分离为：百搭牌（逢人配）和固定牌（含大小王）。
+ * 百搭牌 = 非大小王的红桃打几牌，可替代任意 rank。
+ * 返回 { wildcards, fixed, jokers, fixedNoJoker }。
+ */
 function splitCards(cards, trumpRank) {
   const wildcards = [];
   const fixed = [];
@@ -178,7 +210,14 @@ function matchNOfKind(cards, size, trumpRank) {
   return [];
 }
 
-// 2C: 加速版 matchSequencePattern — 用 bitmask AND 做快速排除
+/**
+ * 两阶段匹配顺序牌型：
+ * 1) 快速排除：用 fixedMask & ~candidateMask 判断固定牌是否存在候选窗口之外的 rank，
+ *    有则直接失败。A 的双向处理：A 在 bit0 和 bit13 都有映射，
+ *    如果 candidate 包含其中一个 A 位，不应因另一个 A 位而误排除。
+ * 2) 精确检查：统计每个候选 rank 位置的固定牌数量与 copiesPerRank 的缺口，
+ *    确认百搭牌数量足以填补所有缺口。
+ */
 function matchSequencePattern(
   fixedCards,
   wildcardCount,

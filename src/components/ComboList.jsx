@@ -40,6 +40,7 @@ function ComboColumn({
   items,
   emptyText,
   showLoading = false,
+  progress = null,
   onRemove = null,
   removeDisabled = false
 }) {
@@ -48,7 +49,7 @@ function ComboColumn({
   return (
     <section className="combo-column">
       <h3>{title}</h3>
-      {showLoading ? <SolvingIndicator /> : null}
+      {showLoading ? <SolvingIndicator progress={progress} /> : null}
       <ul className="combo-list ai-list">
         {items.length === 0 ? (
           <li className="combo-empty">{emptyText}</li>
@@ -84,6 +85,7 @@ export default function ComboList({
   trumpRank,
   aiResult,
   aiStatus,
+  aiSearchProgress,
   removeGroup,
   isSolving
 }) {
@@ -107,6 +109,7 @@ export default function ComboList({
           items={sortedAiItems}
           emptyText="完成组牌后将自动给出 AI 推荐。"
           showLoading={aiStatus === 'running'}
+          progress={aiSearchProgress}
         />
       </div>
     </div>
