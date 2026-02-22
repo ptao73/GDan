@@ -94,8 +94,8 @@ export function scoreComboNoRound(combo, trumpRank) {
 
 // ── 轮次修正 ──
 export function roundCorrection(handCount) {
-  if (handCount <= 7) {
-    return (8 - handCount) * 3;
+  if (handCount <= 8) {
+    return (9 - handCount) * 3;
   }
   if (handCount <= 11) {
     return 0;

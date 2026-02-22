@@ -169,15 +169,14 @@ describe('handTypeScore — 炸弹', () => {
   });
 });
 
-describe('roundCorrection（轮次修正 v3.1）', () => {
-  it('≤7 轮加分：(8-BT)×3', () => {
-    expect(roundCorrection(7)).toBe(3);
-    expect(roundCorrection(6)).toBe(6);
-    expect(roundCorrection(5)).toBe(9);
+describe('roundCorrection（轮次修正）', () => {
+  it('≤8 轮加分：(9-BT)×3', () => {
+    expect(roundCorrection(8)).toBe(3);
+    expect(roundCorrection(7)).toBe(6);
+    expect(roundCorrection(6)).toBe(9);
   });
 
-  it('8-11 轮为 0', () => {
-    expect(roundCorrection(8)).toBe(0);
+  it('9-11 轮为 0', () => {
     expect(roundCorrection(9)).toBe(0);
     expect(roundCorrection(10)).toBe(0);
     expect(roundCorrection(11)).toBe(0);
@@ -208,10 +207,10 @@ describe('scoreScheme', () => {
     ];
     const result = scoreScheme(combos, '2');
     // bomb4 A = +3, pair K = +1, single BJ = +2 → 牌型合计 6
-    // 3 手 → turnScore = (8-3)*3 = 15
-    expect(result.total).toBe(6 + 15);
+    // 3 手 → turnScore = (9-3)*3 = 18
+    expect(result.total).toBe(6 + 18);
     expect(result.detail.handCount).toBe(3);
-    expect(result.detail.turnScore).toBe(15);
+    expect(result.detail.turnScore).toBe(18);
   });
 
   it('detail 不含旧版子分数字段', () => {
