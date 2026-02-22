@@ -58,9 +58,9 @@ function keyCardScore(combo, trumpRank) {
   if (combo.type === 'single') {
     const card = combo.cards[0];
     if (!card) return 0;
-    if (card.rank === 'BJ') return 3;
-    if (card.rank === 'SJ') return 2;
-    if (isWildcardCard(card, trumpRank)) return 2;
+    if (card.rank === 'BJ') return 2;
+    if (card.rank === 'SJ') return 1;
+    if (isWildcardCard(card, trumpRank)) return 1;
     return 0;
   }
 

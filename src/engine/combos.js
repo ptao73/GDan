@@ -192,6 +192,8 @@ function matchNOfKind(cards, size, trumpRank) {
     const fixedCount = fixedRankCounts.get(targetRank) || 0;
 
     if (isJokerRank(targetRank)) {
+      // 大小王不能组成对子，只能作为单张
+      if (size === 2) return [];
       if (wildcards.length > 0 || fixedCount !== size) return [];
       return [{ mainRank: targetRank }];
     }

@@ -63,7 +63,7 @@ describe('scoreComboNoRound', () => {
   it('大王单张有控牌分', () => {
     const combo = makeCombo('single', 'BJ', [['JOKER', 'BJ']]);
     const result = scoreComboNoRound(combo, '2');
-    expect(result.keyScore).toBe(3);
+    expect(result.keyScore).toBe(2);
   });
 
   it('A 对有控牌分', () => {
