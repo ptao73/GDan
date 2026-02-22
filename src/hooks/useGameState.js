@@ -226,9 +226,6 @@ export function useGameState() {
   const [isImportingHand, setIsImportingHand] = useState(false);
 
   const importInputRef = useRef(null);
-  const handJsonInputRef = useRef(null);
-  const handPhotoInputRef = useRef(null);
-  const handCameraInputRef = useRef(null);
   const tesseractLoaderRef = useRef(null);
   const autoSubmitRef = useRef({ key: '' });
   const precomputeRef = useRef({
@@ -1145,6 +1142,7 @@ export function useGameState() {
   }
 
   function openImportDialog() {
+    if (isSolving || isImportingHand) return;
     importInputRef.current?.click();
   }
 
@@ -1220,44 +1218,7 @@ export function useGameState() {
     return tesseractLoaderRef.current;
   }
 
-  function openHandJsonImportDialog() {
-    if (isSolving || isImportingHand) return;
-    handJsonInputRef.current?.click();
-  }
-
-  function openHandPhotoImportDialog() {
-    if (isSolving || isImportingHand) return;
-    handPhotoInputRef.current?.click();
-  }
-
-  function openHandCameraImportDialog() {
-    if (isSolving || isImportingHand) return;
-    handCameraInputRef.current?.click();
-  }
-
-  async function importHandJson(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    setIsImportingHand(true);
-    try {
-      const text = await file.text();
-      const { trumpRank: importedTrumpRank, cardSpecs } = parseHandImportJson(text);
-      applyImportedHandSpecs(cardSpecs, importedTrumpRank, 'JSON 导入');
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : 'JSON 导入失败。');
-    } finally {
-      if (handJsonInputRef.current) {
-        handJsonInputRef.current.value = '';
-      }
-      setIsImportingHand(false);
-    }
-  }
-
-  async function importHandFromImage(event) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  async function importHandFromImageFile(file) {
     setIsImportingHand(true);
     setNotice('正在识别图片中的手牌，请稍候...');
     try {
@@ -1269,28 +1230,48 @@ export function useGameState() {
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '图片识别导入失败。');
     } finally {
-      if (handPhotoInputRef.current) {
-        handPhotoInputRef.current.value = '';
-      }
-      if (handCameraInputRef.current) {
-        handCameraInputRef.current.value = '';
-      }
       setIsImportingHand(false);
     }
+  }
+
+  function isImageFile(file) {
+    if (!file) return false;
+    if (typeof file.type === 'string' && file.type.startsWith('image/')) {
+      return true;
+    }
+    return /\.(png|jpe?g|webp|bmp|gif|heic|heif)$/i.test(file.name || '');
   }
 
   async function importHistory(event) {
     const file = event.target.files?.[0];
     if (!file) return;
-
     try {
+      if (isImageFile(file)) {
+        await importHandFromImageFile(file);
+        return;
+      }
+
       const text = await file.text();
+      let importedHand = null;
+      try {
+        importedHand = parseHandImportJson(text);
+      } catch (_handParseError) {
+        importedHand = null;
+      }
+
+      if (importedHand) {
+        setIsImportingHand(true);
+        applyImportedHandSpecs(importedHand.cardSpecs, importedHand.trumpRank, 'JSON 导入');
+        return;
+      }
+
       const count = await DataService.importData(text);
       await refreshHistoryAndStats();
-      setNotice(`导入完成，处理 ${count} 条记录。`);
+      setNotice(`历史导入完成，处理 ${count} 条记录。`);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '导入失败。');
     } finally {
+      setIsImportingHand(false);
       if (importInputRef.current) {
         importInputRef.current.value = '';
       }
@@ -1360,9 +1341,6 @@ export function useGameState() {
     stats,
     notice,
     importInputRef,
-    handJsonInputRef,
-    handPhotoInputRef,
-    handCameraInputRef,
     remainingCards,
     selectedCards,
     candidateTypes,
@@ -1400,11 +1378,6 @@ export function useGameState() {
     toggleGodView,
     exportHistory,
     openImportDialog,
-    importHistory,
-    openHandJsonImportDialog,
-    openHandPhotoImportDialog,
-    openHandCameraImportDialog,
-    importHandJson,
-    importHandFromImage
+    importHistory
   };
 }

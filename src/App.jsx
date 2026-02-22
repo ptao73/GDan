@@ -15,28 +15,17 @@ export default function App() {
     g.isSolving || (g.remainingCards.length === 0 && Boolean(g.aiResult));
   const handImportDisabled = g.isSolving || g.isImportingHand;
 
-  const scrollToStats = () => {
-    const target = document.getElementById('stats-section');
-    if (!target) return;
-    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
-
   return (
     <main className="page">
       <Header
         onNewDeal={g.handlePrimaryAction}
         onAutoComplete={g.autoCompleteAndSubmit}
         onConfirmGroup={g.confirmGroup}
-        onViewStats={scrollToStats}
-        onExportHistory={g.exportHistory}
-        onImportHistory={g.openImportDialog}
-        onImportHandJson={g.openHandJsonImportDialog}
-        onImportHandCamera={g.openHandCameraImportDialog}
-        onImportHandPhoto={g.openHandPhotoImportDialog}
+        onImport={g.openImportDialog}
         newDealDisabled={g.primaryActionDisabled}
         autoCompleteDisabled={autoCompleteDisabledFromHeader}
         confirmDisabled={!canConfirmFromHeader}
-        dataToolsDisabled={handImportDisabled}
+        importDisabled={handImportDisabled}
         trumpRank={g.trumpRank}
       />
 
@@ -80,30 +69,8 @@ export default function App() {
                 ref={g.importInputRef}
                 className="hidden-input"
                 type="file"
-                accept="application/json"
+                accept="application/json,image/*"
                 onChange={g.importHistory}
-              />
-              <input
-                ref={g.handJsonInputRef}
-                className="hidden-input"
-                type="file"
-                accept="application/json"
-                onChange={g.importHandJson}
-              />
-              <input
-                ref={g.handPhotoInputRef}
-                className="hidden-input"
-                type="file"
-                accept="image/*"
-                onChange={g.importHandFromImage}
-              />
-              <input
-                ref={g.handCameraInputRef}
-                className="hidden-input"
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={g.importHandFromImage}
               />
             </div>
             <CardMatrix
