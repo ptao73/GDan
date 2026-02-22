@@ -1,6 +1,6 @@
 import { cardLabel } from '../engine/cards.js';
 import { isBomb } from '../engine/combos.js';
-import { scoreComboNoRound } from '../engine/scoring.js';
+import { scoreComboNoRound, scoreScheme } from '../engine/scoring.js';
 import { comboRankVector, compareComboDisplayOrder } from '../utils/comboDisplay.js';
 
 function roleText(role) {
@@ -86,12 +86,16 @@ export default function GodViewPanel({ godViewData, godViewStatus, godViewStale,
       <div className="god-players-grid">
         {godViewData.players.map((player) => {
           const seatItems = buildSeatComboItems(player, godViewData.trumpRank);
+          const seatTotal = player.preferred?.combos?.length
+            ? scoreScheme(player.preferred.combos, godViewData.trumpRank).total
+            : 0;
           return (
             <section key={player.seat} className={`god-seat role-${player.role}`}>
               <header>
                 <h3>
                   {player.seatName}家（{roleText(player.role)}）
                 </h3>
+                <span className="god-seat-score">总分 {seatTotal}</span>
                 <span className="god-threat">威胁 {player.threatScore}</span>
               </header>
               <ul className="combo-list god-seat-combo-list">

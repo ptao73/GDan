@@ -1200,6 +1200,7 @@ button.ghost:hover {
 .god-players-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
   gap: 10px;
 }
 
@@ -1236,6 +1237,18 @@ button.ghost:hover {
 
 .god-seat-combo-list {
   margin-top: 0;
+}
+
+.god-seat-score {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #2c5282;
+  border: 1px solid rgba(84, 138, 194, 0.5);
+  background: rgba(209, 228, 255, 0.7);
 }
 
 .god-threat {
