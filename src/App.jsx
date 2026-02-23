@@ -10,24 +10,43 @@ import OcrReviewPanel from './components/OcrReviewPanel.jsx';
 
 export default function App() {
   const g = useGameState();
-  const canConfirmFromHeader =
+
+  // 智能按钮：有选中且满足组牌规则 → 确认成组；否则 → 自动补全
+  const canConfirm =
     !g.isSolving && g.selectedCards.length > 0 && g.candidateTypes.length > 0;
-  const autoCompleteDisabledFromHeader =
-    g.isSolving || (g.remainingCards.length === 0 && Boolean(g.aiResult));
+  const smartAction = canConfirm ? g.confirmGroup : g.autoCompleteAndSubmit;
+  const smartActionLabel = canConfirm ? '确认成组' : '自动补全';
+  const smartActionIcon = canConfirm ? '✓' : '⚡';
+  const smartActionDisabled = canConfirm
+    ? false
+    : g.isSolving || (g.remainingCards.length === 0 && Boolean(g.aiResult));
+
   const handImportDisabled = g.isSolving || g.isImportingHand;
 
   return (
     <main className="page">
       <Header
         onNewDeal={g.handlePrimaryAction}
-        onAutoComplete={g.autoCompleteAndSubmit}
-        onConfirmGroup={g.confirmGroup}
+        onSmartAction={smartAction}
+        smartActionLabel={smartActionLabel}
+        smartActionIcon={smartActionIcon}
+        smartActionDisabled={smartActionDisabled}
         onImport={g.openImportDialog}
+        onToggleGodView={g.toggleGodView}
         newDealDisabled={g.primaryActionDisabled}
-        autoCompleteDisabled={autoCompleteDisabledFromHeader}
-        confirmDisabled={!canConfirmFromHeader}
         importDisabled={handImportDisabled}
+        godViewEnabled={g.godViewEnabled}
+        godViewDisabled={g.isSolving || !g.tableDeal}
         trumpRank={g.trumpRank}
+      />
+
+      {/* 隐藏的文件输入 */}
+      <input
+        ref={g.importInputRef}
+        className="hidden-input"
+        type="file"
+        accept="application/json,image/*"
+        onChange={g.importHistory}
       />
 
       {/* Toast 通知：右下角浮动，key 驱动动画重播 */}
@@ -49,40 +68,6 @@ export default function App() {
       <section className="layout-grid main-grid">
         <article className="panel cards-panel">
           <div className="cards-main">
-            <div className="cards-main-tools">
-              <label className="mode-selector cards-mode-selector">
-                <span>AI搜索档位</span>
-                <select
-                  value={g.aiSearchMode}
-                  onChange={(event) => g.setAiSearchMode(event.target.value)}
-                  disabled={g.isSolving}
-                >
-                  {g.aiSearchModeOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                className={`ghost ${g.godViewEnabled ? 'ghost-active' : ''}`}
-                onClick={g.toggleGodView}
-                disabled={g.isSolving || !g.tableDeal}
-              >
-                {g.godViewStatus === 'running' && !g.godViewEnabled
-                  ? '上帝视角计算中...'
-                  : g.godViewEnabled
-                    ? '收起上帝视角'
-                    : '上帝视角'}
-              </button>
-              <input
-                ref={g.importInputRef}
-                className="hidden-input"
-                type="file"
-                accept="application/json,image/*"
-                onChange={g.importHistory}
-              />
-            </div>
             <CardMatrix
               remainingCards={g.remainingCards}
               selectedIds={g.selectedIds}
@@ -115,6 +100,7 @@ export default function App() {
             godViewStatus={g.godViewStatus}
             godViewStale={g.godViewStale}
             onRefresh={g.refreshGodView}
+            onImportHand={g.importGodViewHand}
           />
         </section>
       ) : null}

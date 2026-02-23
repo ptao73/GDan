@@ -185,6 +185,28 @@ export function useGameState() {
     godView.refreshGodView(tableDeal, aiSearch.aiSearchMode);
   }
 
+  function importGodViewHand(cards, seatName) {
+    if (aiSearch.isSolving) {
+      setNotice('AI 计算中，请稍候。');
+      return;
+    }
+    const cardSpecs = cards.map((c) => ({ suit: c.suit, rank: c.rank }));
+    try {
+      historyHook.applyImportedHandSpecs(cardSpecs, trumpRank, `${seatName}家手牌导入`, {
+        trumpRank,
+        aiSearchMode: aiSearch.aiSearchMode,
+        cancelPendingSearches: aiSearch.cancelPendingSearches,
+        resetPrecomputeState: aiSearch.resetPrecomputeState,
+        resetGodViewPrecomputeState: godView.resetGodViewPrecomputeState,
+        resetRoundState,
+        kickOffPrecompute: aiSearch.kickOffPrecompute,
+        kickOffGodViewPrecompute: godView.kickOffGodViewPrecompute
+      });
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '导入失败。');
+    }
+  }
+
   function handleImportHistory(event) {
     return historyHook.importHistory(event, {
       trumpRank,
@@ -250,6 +272,7 @@ export function useGameState() {
     setAiSearchMode: handleSetAiSearchMode,
     toggleGodView: handleToggleGodView,
     refreshGodView: handleRefreshGodView,
+    importGodViewHand,
     exportHistory: historyHook.exportHistory,
     openImportDialog: historyHook.openImportDialog,
     importHistory: handleImportHistory,

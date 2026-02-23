@@ -24,9 +24,9 @@ export function useGodView({ setNotice, runGodViewWithWorker }) {
   const godViewReady = godViewStatus === 'ready' && Boolean(godViewData);
 
   const ghostHints = useMemo(() => {
-    if (!godViewData?.players) return [];
+    if (!godViewEnabled || !godViewData?.players) return [];
     return godViewData.players
-      .filter((item) => item.role === 'opponent')
+      .filter((item) => item.role !== 'self')
       .map((item) => ({
         seat: item.seat,
         seatName: item.seatName,
@@ -34,7 +34,7 @@ export function useGodView({ setNotice, runGodViewWithWorker }) {
         hands: item.preferred.handCount
       }))
       .sort((a, b) => b.bombCount - a.bombCount);
-  }, [godViewData]);
+  }, [godViewEnabled, godViewData]);
 
   function resetGodViewPrecomputeState() {
     godViewPrecomputeRef.current = {

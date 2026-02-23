@@ -238,6 +238,7 @@ export function useHistory({ setNotice, isSolving }) {
     exportHistory,
     openImportDialog,
     importHistory,
+    applyImportedHandSpecs,
     confirmOcrReview,
     cancelOcrReview
   };

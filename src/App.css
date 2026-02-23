@@ -423,41 +423,6 @@ button.ghost:hover {
   min-width: 0;
 }
 
-.cards-main-tools {
-  display: flex;
-  justify-content: flex-end;
-  align-items: stretch;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.cards-main-tools button {
-  min-height: 44px;
-}
-
-.cards-main-tools .ghost {
-  background: #fff7ea;
-  color: #6b3821;
-  border-color: rgba(194, 154, 95, 0.7);
-}
-
-.cards-main-tools .ghost:hover {
-  background: #fbe5c0;
-  color: #5a2c19;
-  border-color: rgba(183, 136, 67, 0.8);
-}
-
-.cards-main-tools .ghost.ghost-active {
-  background: #1f4a63;
-  color: #fef8ea;
-  border-color: rgba(31, 74, 99, 0.9);
-}
-
-.cards-mode-selector {
-  width: 136px;
-}
-
 .cards-main .matrix-board {
   margin-top: 0;
 }
@@ -577,8 +542,11 @@ button.ghost:hover {
 }
 
 .matrix-meta {
-  display: grid;
-  gap: 3px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
   padding: 2px 2px 8px;
   margin-bottom: 8px;
   border-bottom: 2px solid rgba(190, 168, 137, 0.72);
@@ -594,10 +562,29 @@ button.ghost:hover {
   letter-spacing: 1.5px;
 }
 
+.matrix-trump-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #c4312e;
+  border: 1px solid rgba(196, 49, 46, 0.35);
+  background: rgba(255, 240, 236, 0.8);
+  white-space: nowrap;
+}
+
+.matrix-trump-badge .trump-heart {
+  font-size: 13px;
+}
+
 .ghost-hint-strip {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  width: 100%;
 }
 
 .ghost-hint-chip {
@@ -614,63 +601,9 @@ button.ghost:hover {
 
 .matrix-stage {
   display: grid;
-  grid-template-columns: 88px 1fr;
+  grid-template-columns: 1fr;
   align-items: start;
   gap: 6px;
-}
-
-.matrix-trump-side {
-  display: grid;
-  gap: 8px;
-  justify-items: center;
-  align-content: start;
-  padding-top: 2px;
-}
-
-.matrix-trump-label {
-  margin: 0;
-  color: #c4312e;
-  font-size: 26px;
-  font-weight: 700;
-  letter-spacing: 1px;
-}
-
-.matrix-trump-card {
-  position: relative;
-  width: 58px;
-  aspect-ratio: 2 / 3;
-  border-radius: 8px;
-  border: 1.5px solid #d7c5aa;
-  background: linear-gradient(165deg, #fff, #f6f2ea);
-  color: #c4312e;
-  box-shadow: 0 3px 8px rgba(45, 34, 23, 0.14);
-}
-
-.matrix-trump-card .trump-rank {
-  position: absolute;
-  font-size: 12px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.matrix-trump-card .trump-rank.tl {
-  left: 5px;
-  top: 4px;
-}
-
-.matrix-trump-card .trump-rank.br {
-  right: 5px;
-  bottom: 4px;
-  transform: rotate(180deg);
-}
-
-.matrix-trump-card .trump-suit {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 24px;
-  line-height: 1;
 }
 
 .matrix-scroll {
@@ -692,7 +625,7 @@ button.ghost:hover {
 .matrix-head-row,
 .matrix-row {
   display: grid;
-  grid-template-columns: var(--matrix-side-col) repeat(15, var(--matrix-col-w));
+  grid-template-columns: repeat(15, var(--matrix-col-w));
   column-gap: var(--matrix-gap);
 }
 
@@ -727,7 +660,6 @@ button.ghost:hover {
 
 .matrix-corner,
 .matrix-rank-head,
-.matrix-suit-head,
 .joker-label {
   display: flex;
   align-items: center;
@@ -754,16 +686,6 @@ button.ghost:hover {
 
 .matrix-rank-head.joker-head {
   font-size: 13px;
-}
-
-.matrix-suit-head {
-  min-height: var(--matrix-row-h);
-  font-size: 22px;
-  color: #2f261b;
-}
-
-.matrix-suit-head.red {
-  color: #b53126;
 }
 
 .matrix-card-cell {
@@ -1275,16 +1197,16 @@ button.ghost:hover {
   background: rgba(255, 253, 248, 0.6);
 }
 
-.god-seat summary {
+.god-import-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 5px 0;
+  font-size: 0.85em;
+  color: #3b7dd8;
+  border: 1px dashed #a4c4ee;
+  border-radius: 6px;
   cursor: pointer;
-  color: #5a4d3b;
-}
-
-.god-ghost-cards {
-  margin: 6px 0 0;
-  color: rgba(66, 60, 49, 0.76);
-  letter-spacing: 0.2px;
-  line-height: 1.45;
+  background: rgba(59, 125, 216, 0.06);
 }
 
 .score-compare-grid {
@@ -1554,14 +1476,6 @@ button.ghost:hover {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .cards-main-tools {
-    justify-content: stretch;
-  }
-
-  .cards-mode-selector {
-    width: 100%;
-  }
-
   .history-list li {
     grid-template-columns: 1fr;
     gap: 4px;
@@ -1576,30 +1490,6 @@ button.ghost:hover {
 
   .panel {
     padding: 12px;
-  }
-
-  .cards-main-tools {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: stretch;
-    gap: 7px;
-  }
-
-  .cards-main-tools > button,
-  .cards-main-tools .ghost {
-    width: 100%;
-  }
-
-  .cards-main-tools .cards-mode-selector {
-    grid-column: 1 / -1;
-  }
-
-  .cards-main-tools .mode-selector span {
-    font-size: 11px;
-  }
-
-  .cards-main-tools .mode-selector select {
-    width: 100%;
   }
 
   .matrix-board {
@@ -1692,36 +1582,6 @@ button.ghost:hover {
   .matrix-meta h2 {
     font-size: clamp(30px, 9vw, 42px);
     letter-spacing: 1px;
-  }
-
-  .matrix-stage {
-    grid-template-columns: 64px 1fr;
-    gap: 4px;
-  }
-
-  .matrix-trump-label {
-    font-size: 16px;
-  }
-
-  .matrix-trump-card {
-    width: 44px;
-    border-radius: 7px;
-  }
-
-  .matrix-trump-card .trump-rank {
-    font-size: 10px;
-  }
-
-  .matrix-trump-card .trump-suit {
-    font-size: 19px;
-  }
-
-  .cards-main-tools {
-    gap: 6px;
-  }
-
-  .cards-mode-selector {
-    width: 100%;
   }
 
   .score-grid {
@@ -1824,9 +1684,6 @@ button.ghost:hover {
     --matrix-lift: 6px;
   }
 
-  .matrix-suit-head {
-    font-size: 20px;
-  }
 }
 
 @media (max-width: 390px) {
@@ -1861,11 +1718,6 @@ button.ghost:hover {
     color: #f8f2e5;
   }
 
-  .cards-main-tools .ghost:hover {
-    background: #fff7ea;
-    color: #6b3821;
-    border-color: rgba(194, 154, 95, 0.7);
-  }
 }
 
 /* OCR 审查面板 */

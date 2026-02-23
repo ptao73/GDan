@@ -37,7 +37,7 @@ function comboLineText(item) {
   return `${item.combo.label}（${item.total}分）：${cards}`;
 }
 
-export default function GodViewPanel({ godViewData, godViewStatus, godViewStale, onRefresh }) {
+export default function GodViewPanel({ godViewData, godViewStatus, godViewStale, onRefresh, onImportHand }) {
   if (godViewStatus === 'running') {
     return (
       <article className="panel god-view-panel">
@@ -115,12 +115,12 @@ export default function GodViewPanel({ godViewData, godViewStatus, godViewStale,
                   })
                 )}
               </ul>
-              <details>
-                <summary>查看手牌（{player.cards.length}）</summary>
-                <p className="god-ghost-cards">
-                  {player.cards.map((card) => cardLabel(card)).join(' ')}
-                </p>
-              </details>
+              <button
+                className="ghost god-import-btn"
+                onClick={() => onImportHand(player.cards, player.seatName)}
+              >
+                导入手牌（{player.cards.length}）
+              </button>
             </section>
           );
         })}

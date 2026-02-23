@@ -4,13 +4,16 @@ const RANK_ORDER = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K',
 
 export default function Header({
   onNewDeal,
-  onAutoComplete,
-  onConfirmGroup,
+  onSmartAction,
+  smartActionLabel = '自动补全',
+  smartActionIcon = '⚡',
+  smartActionDisabled = false,
   onImport,
+  onToggleGodView,
   newDealDisabled = false,
-  autoCompleteDisabled = false,
-  confirmDisabled = false,
   importDisabled = false,
+  godViewEnabled = false,
+  godViewDisabled = false,
   trumpRank = '2'
 }) {
   const [compact, setCompact] = useState(false);
@@ -43,20 +46,12 @@ export default function Header({
       disabled: newDealDisabled
     },
     {
-      key: 'auto',
-      full: '自动补全',
-      compact: '自动补全',
-      icon: '⚡',
-      onClick: onAutoComplete,
-      disabled: autoCompleteDisabled
-    },
-    {
-      key: 'confirm',
-      full: '确认成组',
-      compact: '确认成组',
-      icon: '✓',
-      onClick: onConfirmGroup,
-      disabled: confirmDisabled
+      key: 'smart',
+      full: smartActionLabel,
+      compact: smartActionLabel,
+      icon: smartActionIcon,
+      onClick: onSmartAction,
+      disabled: smartActionDisabled
     },
     {
       key: 'import',
@@ -65,6 +60,14 @@ export default function Header({
       icon: '⇅',
       onClick: onImport,
       disabled: importDisabled
+    },
+    {
+      key: 'godview',
+      full: godViewEnabled ? '关闭透视' : '上帝视角',
+      compact: godViewEnabled ? '关闭透视' : '透视',
+      icon: '👁',
+      onClick: onToggleGodView,
+      disabled: godViewDisabled
     }
   ];
 
