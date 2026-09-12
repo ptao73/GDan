@@ -1,3 +1,72 @@
+# GDan — Guandan Hand Grouping & AI Scoring Trainer
+
+GDan is an open-source, browser-based training and analysis tool for **Guandan (掼蛋)** hand grouping, rule validation, scoring, and AI-assisted comparison. It runs as a PWA and keeps the core analysis in the browser.
+
+**Live demo:** https://gdan.vercel.app
+
+> 中文说明见下方。Contributions, bug reports, benchmark cases, and documentation improvements are welcome.
+
+## Why this project exists
+
+Guandan hand grouping is a constrained search problem: a 27-card hand may have many legal decompositions, and the strongest grouping depends on card type, bombs, control cards, wildcard usage, and expected number of turns. GDan makes this process inspectable by combining deterministic rule logic, a scoring model, and background AI search.
+
+## Highlights
+
+- Rule recognition for singles, pairs, triples, full houses, straights, consecutive pairs/triples, bombs, straight flushes, and joker bombs
+- Wildcard handling for the heart level card (逢人配)
+- AI-assisted grouping search with multiple depth levels and Web Worker execution
+- Visual comparison between user grouping and AI suggestions
+- Four-player “god view” analysis
+- JSON and image import with OCR review and de-duplication
+- Local history and statistics with IndexedDB
+- PWA/offline support
+- Unit tests for core engine behavior
+
+## Tech stack
+
+- React 18 + Vite 5
+- Web Worker
+- IndexedDB
+- Tesseract.js
+- Vitest
+- ESLint + Prettier
+- PWA / Service Worker
+
+## Quick start
+
+```bash
+npm install
+npm run dev
+```
+
+Before opening a pull request:
+
+```bash
+npm run lint
+npm run format:check
+npm test
+npm run build
+```
+
+## Roadmap
+
+- [ ] Add reproducible solver benchmark cases
+- [ ] Improve OCR robustness across mobile screenshots and camera images
+- [ ] Expand English documentation and examples
+- [ ] Add performance profiling for deep search
+- [ ] Add more edge-case tests for wildcard and bomb combinations
+- [ ] Improve accessibility and mobile interaction
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md). For non-trivial changes, please open an issue first so the scope can be discussed.
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
+
+---
+
 # 掼蛋组牌评分系统
 
 一款基于浏览器的掼蛋（双副牌升级）手牌组牌练习与 AI 评分工具，支持 PWA 离线使用。
@@ -22,59 +91,21 @@
 - **统计分析** — 最优命中率、分差分布、手数与炸弹偏好、训练建议
 - **PWA** — 支持添加到主屏幕，Service Worker 离线缓存
 
-## 技术栈
-
-- React 18 + Vite 5
-- Web Worker（AI 求解与上帝视角计算在后台线程运行）
-- IndexedDB（本地持久化历史数据）
-- Tesseract.js（OCR 图片识别，按需 CDN 加载）
-- Vitest（单元测试）
-- ESLint + Prettier（代码规范）
-- PWA（Service Worker + Web App Manifest）
-
-## 快速开始
-
-```bash
-# 安装依赖
-npm install
-
-# 启动开发服务器
-npm run dev
-```
-
-## 常用命令
-
-| 命令 | 说明 |
-|------|------|
-| `npm run dev` | 启动开发服务器 |
-| `npm test` | 运行单元测试 |
-| `npm run test:watch` | 测试监听模式 |
-| `npm run lint` | 代码检查 |
-| `npm run format` | 代码格式化 |
-| `npm run build` | 生产构建 |
-| `npm run preview` | 预览构建产物 |
-
 ## 项目结构
 
-```
+```text
 src/
 ├── engine/          # 核心引擎：发牌、牌型识别、评分、求解算法
-├── components/      # React 组件：牌面矩阵、组牌列表、上帝视角、OCR 审查等
-├── hooks/           # 状态管理：游戏状态、AI 搜索、卡牌选择、历史记录等
+├── components/      # React 组件
+├── hooks/           # 状态管理
 ├── workers/         # Web Worker：后台 AI 计算
-├── services/        # 数据服务：IndexedDB 持久化
-├── utils/           # 工具函数：手牌导入解析、OCR 去重
-├── App.jsx          # 主界面
-└── main.jsx         # 入口文件
-public/
-├── manifest.webmanifest
-├── sw.js            # Service Worker
-├── icon.svg         # 应用图标
-└── ornaments/       # 装饰素材
+├── services/        # IndexedDB 持久化
+├── utils/           # 导入解析、OCR 去重等
+├── App.jsx
+└── main.jsx
 ```
 
 ## 注意事项
 
 - AI 搜索已实现超时降级机制，复杂局面下返回结果可能是「较优」而非全局最优。
 - OCR 图片识别依赖 Tesseract.js CDN，首次使用需要联网加载。
-- 建议提交前执行：`npm run lint && npm run format:check && npm test && npm run build`。
