@@ -112,16 +112,21 @@ export function useHistory({ setNotice, isSolving }) {
     return /\.(png|jpe?g|webp|bmp|gif|heic|heif)$/i.test(file.name || '');
   }
 
-  function applyImportedHandSpecs(cardSpecs, incomingTrumpRank, sourceLabel, {
-    trumpRank,
-    aiSearchMode,
-    cancelPendingSearches,
-    resetPrecomputeState,
-    resetGodViewPrecomputeState,
-    resetRoundState,
-    kickOffPrecompute,
-    kickOffGodViewPrecompute
-  }) {
+  function applyImportedHandSpecs(
+    cardSpecs,
+    incomingTrumpRank,
+    sourceLabel,
+    {
+      trumpRank,
+      aiSearchMode,
+      cancelPendingSearches,
+      resetPrecomputeState,
+      resetGodViewPrecomputeState,
+      resetRoundState,
+      kickOffPrecompute,
+      kickOffGodViewPrecompute
+    }
+  ) {
     if (!Array.isArray(cardSpecs) || cardSpecs.length !== HAND_CARD_COUNT) {
       throw new Error(
         `导入失败：手牌必须是 ${HAND_CARD_COUNT} 张，当前识别到 ${cardSpecs?.length || 0} 张。`
@@ -211,7 +216,12 @@ export function useHistory({ setNotice, isSolving }) {
 
       if (importedHand) {
         setIsImportingHand(true);
-        applyImportedHandSpecs(importedHand.cardSpecs, importedHand.trumpRank, 'JSON 导入', importContext);
+        applyImportedHandSpecs(
+          importedHand.cardSpecs,
+          importedHand.trumpRank,
+          'JSON 导入',
+          importContext
+        );
         return;
       }
 

@@ -4,7 +4,13 @@ import { comboKey, createCombo, detectComboTypes } from '../engine/combos.js';
 import { MATRIX_RANKS } from './gameStateConstants.js';
 import { pickAutoTriple, pickAutoPair } from './autoComplete.js';
 
-export function useCardSelection({ trumpRank, dealtCards, isSolving, clearScoringResult, setNotice }) {
+export function useCardSelection({
+  trumpRank,
+  dealtCards,
+  isSolving,
+  clearScoringResult,
+  setNotice
+}) {
   const [userCombos, setUserCombos] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedTypeIndex, setSelectedTypeIndex] = useState(0);

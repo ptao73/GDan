@@ -37,7 +37,13 @@ function comboLineText(item) {
   return `${item.combo.label}（${item.total}分）：${cards}`;
 }
 
-export default function GodViewPanel({ godViewData, godViewStatus, godViewStale, onRefresh, onImportHand }) {
+export default function GodViewPanel({
+  godViewData,
+  godViewStatus,
+  godViewStale,
+  onRefresh,
+  onImportHand
+}) {
   if (godViewStatus === 'running') {
     return (
       <article className="panel god-view-panel">
@@ -69,7 +75,10 @@ export default function GodViewPanel({ godViewData, godViewStatus, godViewStale,
     <article className="panel god-view-panel">
       <h2>上帝视角</h2>
       {godViewStale && (
-        <p className="warn" style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <p
+          className="warn"
+          style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
+        >
           组牌已变化，当前分析可能不准确
           {onRefresh && (
             <button className="ghost" onClick={onRefresh} style={{ fontSize: '0.85em' }}>
@@ -137,7 +146,9 @@ export default function GodViewPanel({ godViewData, godViewStatus, godViewStale,
         <div className="god-composition">
           <h3>组牌分析</h3>
           <p>
-            手{godViewData.composition.handCount} 炸{godViewData.composition.bombCount} 控{godViewData.composition.keyScore} 闷{godViewData.composition.interruptionProbability}% 接风{godViewData.composition.controlRecapture}%
+            手{godViewData.composition.handCount} 炸{godViewData.composition.bombCount} 控
+            {godViewData.composition.keyScore} 闷{godViewData.composition.interruptionProbability}%
+            接风{godViewData.composition.controlRecapture}%
           </p>
           {godViewData.composition.explanation && (
             <p className="god-explanation">{godViewData.composition.explanation}</p>

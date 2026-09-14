@@ -162,9 +162,7 @@ function summarizeComposition(scheme, opponentsAvg, endgameFlag = false) {
   }
 
   const explanation =
-    explanationParts.length > 0
-      ? explanationParts.join('；') + '。'
-      : '当前组牌方案较为均衡。';
+    explanationParts.length > 0 ? explanationParts.join('；') + '。' : '当前组牌方案较为均衡。';
 
   return {
     ...scheme,

@@ -49,28 +49,44 @@ export default function OcrReviewPanel({ ocrReview, onConfirm, onCancel }) {
       <div className="ocr-review-add">
         <select value={addSuit} onChange={(e) => setAddSuit(e.target.value)}>
           {SUITS.map((s) => (
-            <option key={s} value={s}>{SUIT_LABELS[s]} {s}</option>
+            <option key={s} value={s}>
+              {SUIT_LABELS[s]} {s}
+            </option>
           ))}
         </select>
         <select value={addRank} onChange={(e) => setAddRank(e.target.value)}>
           {STANDARD_RANKS.map((r) => (
-            <option key={r} value={r}>{r}</option>
+            <option key={r} value={r}>
+              {r}
+            </option>
           ))}
         </select>
         <button type="button" onClick={addCard} disabled={cards.length >= HAND_CARD_COUNT}>
           添加
         </button>
-        <button type="button" onClick={() => addJoker('SJ')} disabled={cards.length >= HAND_CARD_COUNT}>
+        <button
+          type="button"
+          onClick={() => addJoker('SJ')}
+          disabled={cards.length >= HAND_CARD_COUNT}
+        >
           +小王
         </button>
-        <button type="button" onClick={() => addJoker('BJ')} disabled={cards.length >= HAND_CARD_COUNT}>
+        <button
+          type="button"
+          onClick={() => addJoker('BJ')}
+          disabled={cards.length >= HAND_CARD_COUNT}
+        >
           +大王
         </button>
       </div>
 
       {/* 操作按钮 */}
       <div className="ocr-review-actions">
-        <button type="button" onClick={() => onConfirm(cards)} disabled={cards.length !== HAND_CARD_COUNT}>
+        <button
+          type="button"
+          onClick={() => onConfirm(cards)}
+          disabled={cards.length !== HAND_CARD_COUNT}
+        >
           确认导入（{cards.length}/{HAND_CARD_COUNT}）
         </button>
         <button type="button" className="ghost" onClick={onCancel}>

@@ -270,7 +270,9 @@ function normalizeTextForOcr(rawText) {
 
 function extractTrumpRankFromText(normalizedText) {
   const raw = toHalfWidth(normalizedText);
-  const match = raw.match(/(?:当前打|打几|级牌|主牌|TRUMP)\s*[:：]?\s*(?:[SHCD]\s*)?(10|[2-9JQKA])/i);
+  const match = raw.match(
+    /(?:当前打|打几|级牌|主牌|TRUMP)\s*[:：]?\s*(?:[SHCD]\s*)?(10|[2-9JQKA])/i
+  );
   if (!match) return undefined;
   return normalizeTrumpRank(match[1], undefined);
 }

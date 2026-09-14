@@ -12,8 +12,7 @@ export default function App() {
   const g = useGameState();
 
   // 智能按钮：有选中且满足组牌规则 → 确认成组；否则 → 自动补全
-  const canConfirm =
-    !g.isSolving && g.selectedCards.length > 0 && g.candidateTypes.length > 0;
+  const canConfirm = !g.isSolving && g.selectedCards.length > 0 && g.candidateTypes.length > 0;
   const smartAction = canConfirm ? g.confirmGroup : g.autoCompleteAndSubmit;
   const smartActionLabel = canConfirm ? '确认成组' : '自动补全';
   const smartActionIcon = canConfirm ? '✓' : '⚡';

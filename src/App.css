@@ -1683,7 +1683,6 @@ button.ghost:hover {
     --matrix-card-w: 42px;
     --matrix-lift: 6px;
   }
-
 }
 
 @media (max-width: 390px) {
@@ -1717,7 +1716,6 @@ button.ghost:hover {
     border-color: rgba(251, 240, 219, 0.45);
     color: #f8f2e5;
   }
-
 }
 
 /* OCR 审查面板 */
