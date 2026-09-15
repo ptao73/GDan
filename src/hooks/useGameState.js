@@ -1,11 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createTableDeal } from '../engine/cards.js';
 import { comboKey } from '../engine/combos.js';
-import {
-  AI_MODE_LABEL_MAP,
-  AI_SEARCH_MODE_OPTIONS,
-  buildDealKey
-} from './gameStateConstants.js';
+import { AI_MODE_LABEL_MAP, AI_SEARCH_MODE_OPTIONS, buildDealKey } from './gameStateConstants.js';
 import { useCardSelection } from './useCardSelection.js';
 import { useAiSearch } from './useAiSearch.js';
 import { useGodView } from './useGodView.js';
@@ -47,8 +43,12 @@ export function useGameState() {
 
   const primaryActionLabel = '新开局';
   const primaryActionDisabled = aiSearch.isSolving;
-  const aiScoreView = aiSearch.aiResult ? { total: aiSearch.aiResult.score, detail: aiSearch.aiResult.detail } : null;
-  const aiHasRecommendation = Boolean(aiSearch.aiResult && userScore && aiSearch.aiResult.score > userScore.total);
+  const aiScoreView = aiSearch.aiResult
+    ? { total: aiSearch.aiResult.score, detail: aiSearch.aiResult.detail }
+    : null;
+  const aiHasRecommendation = Boolean(
+    aiSearch.aiResult && userScore && aiSearch.aiResult.score > userScore.total
+  );
   const aiSearchModeLabel = AI_MODE_LABEL_MAP[aiSearch.aiSearchMode] || AI_MODE_LABEL_MAP.balanced;
 
   // --- 副作用 ---
@@ -138,7 +138,14 @@ export function useGameState() {
       // submitScoring already sets user notice on failure.
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [aiSearch.isSolving, aiSearch.aiResult, dealtCards, cardSelection.remainingCards, cardSelection.userCombos, trumpRank]);
+  }, [
+    aiSearch.isSolving,
+    aiSearch.aiResult,
+    dealtCards,
+    cardSelection.remainingCards,
+    cardSelection.userCombos,
+    trumpRank
+  ]);
 
   function handlePrimaryAction() {
     if (aiSearch.isSolving) {

@@ -143,16 +143,21 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
 
       // 更新搜索进度
       if (trackProgress) {
-        setAiSearchProgress({ current: (initialAttempts || 0) + idx + 1, total: (initialAttempts || 0) + totalProfiles });
+        setAiSearchProgress({
+          current: (initialAttempts || 0) + idx + 1,
+          total: (initialAttempts || 0) + totalProfiles
+        });
       }
 
-      const {
-        result,
-        usedFallback: profileFallback
-      } = await runSingleProfileSearch(cards, rank, profile, {
-        targetScore,
-        stopAfterSurpass
-      });
+      const { result, usedFallback: profileFallback } = await runSingleProfileSearch(
+        cards,
+        rank,
+        profile,
+        {
+          targetScore,
+          stopAfterSurpass
+        }
+      );
 
       if (profileFallback) {
         usedFallback = true;
@@ -464,7 +469,10 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
     }
   }
 
-  function handleChangeAiSearchMode(nextMode, { kickOffPrecomputeFn, kickOffGodViewPrecomputeFn, tableDeal }) {
+  function handleChangeAiSearchMode(
+    nextMode,
+    { kickOffPrecomputeFn, kickOffGodViewPrecomputeFn, tableDeal }
+  ) {
     if (isSolving) {
       setNotice('AI 正在计算中，暂不可切换搜索档位。');
       return;

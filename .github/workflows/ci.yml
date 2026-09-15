@@ -23,8 +23,7 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Format Check (non-blocking)
-        continue-on-error: true
+      - name: Format Check
         run: npm run format:check
 
       - name: Test

@@ -54,41 +54,84 @@ describe('handTypeScore — 单张', () => {
 
 describe('handTypeScore — 对子', () => {
   it('A 对 +1', () => {
-    const combo = makeCombo('pair', 'A', [['S', 'A'], ['H', 'A']]);
+    const combo = makeCombo('pair', 'A', [
+      ['S', 'A'],
+      ['H', 'A']
+    ]);
     expect(handTypeScore(combo, '2')).toBe(1);
   });
 
   it('K 对 +1', () => {
-    const combo = makeCombo('pair', 'K', [['S', 'K'], ['H', 'K']]);
+    const combo = makeCombo('pair', 'K', [
+      ['S', 'K'],
+      ['H', 'K']
+    ]);
     expect(handTypeScore(combo, '2')).toBe(1);
   });
 
   it('级牌对 +1', () => {
-    const combo = makeCombo('pair', '5', [['S', '5'], ['D', '5']]);
+    const combo = makeCombo('pair', '5', [
+      ['S', '5'],
+      ['D', '5']
+    ]);
     expect(handTypeScore(combo, '5')).toBe(1);
   });
 
   it('8-10 对 = 0', () => {
-    expect(handTypeScore(makeCombo('pair', '10', [['S', '10'], ['H', '10']]), '2')).toBe(0);
+    expect(
+      handTypeScore(
+        makeCombo('pair', '10', [
+          ['S', '10'],
+          ['H', '10']
+        ]),
+        '2'
+      )
+    ).toBe(0);
   });
 
   it('≤7 对 = -1', () => {
-    expect(handTypeScore(makeCombo('pair', '3', [['S', '3'], ['H', '3']]), '2')).toBe(-1);
+    expect(
+      handTypeScore(
+        makeCombo('pair', '3', [
+          ['S', '3'],
+          ['H', '3']
+        ]),
+        '2'
+      )
+    ).toBe(-1);
   });
 });
 
 describe('handTypeScore — 三带二', () => {
   it('主牌 ≤9 = 0', () => {
-    const combo = makeCombo('threeWithPair', '7', [
-      ['S', '7'], ['H', '7'], ['C', '7'], ['S', '3'], ['H', '3']
-    ], { tripleRank: '7', pairRank: '3' });
+    const combo = makeCombo(
+      'threeWithPair',
+      '7',
+      [
+        ['S', '7'],
+        ['H', '7'],
+        ['C', '7'],
+        ['S', '3'],
+        ['H', '3']
+      ],
+      { tripleRank: '7', pairRank: '3' }
+    );
     expect(handTypeScore(combo, '2')).toBe(0);
   });
 
   it('主牌 10+ = +1', () => {
-    const combo = makeCombo('threeWithPair', 'K', [
-      ['S', 'K'], ['H', 'K'], ['C', 'K'], ['S', '3'], ['H', '3']
-    ], { tripleRank: 'K', pairRank: '3' });
+    const combo = makeCombo(
+      'threeWithPair',
+      'K',
+      [
+        ['S', 'K'],
+        ['H', 'K'],
+        ['C', 'K'],
+        ['S', '3'],
+        ['H', '3']
+      ],
+      { tripleRank: 'K', pairRank: '3' }
+    );
     expect(handTypeScore(combo, '2')).toBe(1);
   });
 });
@@ -96,14 +139,20 @@ describe('handTypeScore — 三带二', () => {
 describe('handTypeScore — 木板/钢板', () => {
   it('主牌 ≤7 = +1', () => {
     const combo = makeCombo('wood', '5', [
-      ['S', '4'], ['H', '4'], ['S', '5'], ['H', '5']
+      ['S', '4'],
+      ['H', '4'],
+      ['S', '5'],
+      ['H', '5']
     ]);
     expect(handTypeScore(combo, '2')).toBe(1);
   });
 
   it('主牌 8+ = +2', () => {
     const combo = makeCombo('wood', '9', [
-      ['S', '8'], ['H', '8'], ['S', '9'], ['H', '9']
+      ['S', '8'],
+      ['H', '8'],
+      ['S', '9'],
+      ['H', '9']
     ]);
     expect(handTypeScore(combo, '2')).toBe(2);
   });
@@ -112,14 +161,22 @@ describe('handTypeScore — 木板/钢板', () => {
 describe('handTypeScore — 顺子', () => {
   it('主牌 ≤9 = 0', () => {
     const combo = makeCombo('straight', '9', [
-      ['S', '5'], ['H', '6'], ['C', '7'], ['D', '8'], ['S', '9']
+      ['S', '5'],
+      ['H', '6'],
+      ['C', '7'],
+      ['D', '8'],
+      ['S', '9']
     ]);
     expect(handTypeScore(combo, '2')).toBe(0);
   });
 
   it('主牌 10+ = +1', () => {
     const combo = makeCombo('straight', 'A', [
-      ['S', '10'], ['H', 'J'], ['C', 'Q'], ['D', 'K'], ['S', 'A']
+      ['S', '10'],
+      ['H', 'J'],
+      ['C', 'Q'],
+      ['D', 'K'],
+      ['S', 'A']
     ]);
     expect(handTypeScore(combo, '2')).toBe(1);
   });
@@ -128,42 +185,64 @@ describe('handTypeScore — 顺子', () => {
 describe('handTypeScore — 炸弹', () => {
   it('天王炸 = +6', () => {
     const combo = makeCombo('tianwang', 'BJ', [
-      ['JOKER', 'BJ'], ['JOKER', 'BJ'], ['JOKER', 'SJ'], ['JOKER', 'SJ']
+      ['JOKER', 'BJ'],
+      ['JOKER', 'BJ'],
+      ['JOKER', 'SJ'],
+      ['JOKER', 'SJ']
     ]);
     expect(handTypeScore(combo, '2')).toBe(6);
   });
 
   it('6/7/8 张炸 = +5', () => {
     const combo = makeCombo('bomb6', 'A', [
-      ['S', 'A'], ['H', 'A'], ['C', 'A'], ['D', 'A'], ['S', 'A'], ['H', 'A']
+      ['S', 'A'],
+      ['H', 'A'],
+      ['C', 'A'],
+      ['D', 'A'],
+      ['S', 'A'],
+      ['H', 'A']
     ]);
     expect(handTypeScore(combo, '2')).toBe(5);
   });
 
   it('同花顺 = +4', () => {
     const combo = makeCombo('straightFlush', 'A', [
-      ['S', '10'], ['S', 'J'], ['S', 'Q'], ['S', 'K'], ['S', 'A']
+      ['S', '10'],
+      ['S', 'J'],
+      ['S', 'Q'],
+      ['S', 'K'],
+      ['S', 'A']
     ]);
     expect(handTypeScore(combo, '2')).toBe(4);
   });
 
   it('常规炸弹 主牌 J+ = +3', () => {
     const combo = makeCombo('bomb4', 'A', [
-      ['S', 'A'], ['H', 'A'], ['C', 'A'], ['D', 'A']
+      ['S', 'A'],
+      ['H', 'A'],
+      ['C', 'A'],
+      ['D', 'A']
     ]);
     expect(handTypeScore(combo, '2')).toBe(3);
   });
 
   it('常规炸弹 主牌 ≤10 = +2', () => {
     const combo = makeCombo('bomb4', '7', [
-      ['S', '7'], ['H', '7'], ['C', '7'], ['D', '7']
+      ['S', '7'],
+      ['H', '7'],
+      ['C', '7'],
+      ['D', '7']
     ]);
     expect(handTypeScore(combo, '2')).toBe(2);
   });
 
   it('5 张炸弹 主牌 K = +3', () => {
     const combo = makeCombo('bomb5', 'K', [
-      ['S', 'K'], ['H', 'K'], ['C', 'K'], ['D', 'K'], ['S', 'K']
+      ['S', 'K'],
+      ['H', 'K'],
+      ['C', 'K'],
+      ['D', 'K'],
+      ['S', 'K']
     ]);
     expect(handTypeScore(combo, '2')).toBe(3);
   });
@@ -191,7 +270,10 @@ describe('roundCorrection（轮次修正）', () => {
 describe('scoreComboNoRound', () => {
   it('返回 { total } 与 handTypeScore 一致', () => {
     const combo = makeCombo('bomb4', 'A', [
-      ['S', 'A'], ['H', 'A'], ['C', 'A'], ['D', 'A']
+      ['S', 'A'],
+      ['H', 'A'],
+      ['C', 'A'],
+      ['D', 'A']
     ]);
     const result = scoreComboNoRound(combo, '2');
     expect(result.total).toBe(3);
@@ -201,8 +283,16 @@ describe('scoreComboNoRound', () => {
 describe('scoreScheme', () => {
   it('总分 = Σ 牌型得分 + 轮次得分', () => {
     const combos = [
-      makeCombo('bomb4', 'A', [['S', 'A'], ['H', 'A'], ['C', 'A'], ['D', 'A']]),
-      makeCombo('pair', 'K', [['S', 'K'], ['H', 'K']]),
+      makeCombo('bomb4', 'A', [
+        ['S', 'A'],
+        ['H', 'A'],
+        ['C', 'A'],
+        ['D', 'A']
+      ]),
+      makeCombo('pair', 'K', [
+        ['S', 'K'],
+        ['H', 'K']
+      ]),
       makeCombo('single', 'BJ', [['JOKER', 'BJ']])
     ];
     const result = scoreScheme(combos, '2');
@@ -226,7 +316,11 @@ describe('scoreScheme', () => {
 describe('wildcardUtilityPenalty（搜索启发式）', () => {
   it('炸弹中使用逢人配不扣分', () => {
     const combo = makeCombo('bomb5', '8', [
-      ['S', '8'], ['H', '8'], ['C', '8'], ['D', '8'], ['H', '2']
+      ['S', '8'],
+      ['H', '8'],
+      ['C', '8'],
+      ['D', '8'],
+      ['H', '2']
     ]);
     combo.cards = combo.cards.map((c) => decorateCard({ ...c }, '2'));
     expect(wildcardUtilityPenalty(combo, '2')).toBe(0);
