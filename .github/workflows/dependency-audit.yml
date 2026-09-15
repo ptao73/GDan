@@ -14,5 +14,7 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - name: npm audit
+      - name: Audit all dependencies
         run: npm audit --audit-level=low || true
+      - name: Audit production dependencies only
+        run: npm audit --omit=dev --audit-level=low || true
