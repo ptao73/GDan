@@ -28,5 +28,8 @@
     "prettier": "^3.8.1",
     "vite": "^5.4.11",
     "vitest": "^4.0.18"
+  },
+  "overrides": {
+    "esbuild": "^0.25.0"
   }
 }
