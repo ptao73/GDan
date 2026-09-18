@@ -45,12 +45,13 @@ Before opening a pull request:
 npm run lint
 npm run format:check
 npm test
+npm run benchmark
 npm run build
 ```
 
 ## Roadmap
 
-- [ ] Add reproducible solver benchmark cases
+- [x] Add reproducible solver benchmark cases
 - [ ] Improve OCR robustness across mobile screenshots and camera images
 - [ ] Expand English documentation and examples
 - [ ] Add performance profiling for deep search
@@ -94,6 +95,7 @@ MIT — see [LICENSE](./LICENSE).
 ## 项目结构
 
 ```text
+benchmarks/          # 求解器基准测试集与运行脚本
 src/
 ├── engine/          # 核心引擎：发牌、牌型识别、评分、求解算法
 ├── components/      # React 组件

@@ -9,9 +9,10 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "benchmark": "node benchmarks/run.js",
     "lint": "eslint .",
-    "format": "prettier --write \"src/**/*.{js,jsx,css}\"",
-    "format:check": "prettier --check \"src/**/*.{js,jsx,css}\""
+    "format": "prettier --write \"{src,benchmarks}/**/*.{js,jsx,css,json}\"",
+    "format:check": "prettier --check \"{src,benchmarks}/**/*.{js,jsx,css,json}\""
   },
   "dependencies": {
     "react": "^18.3.1",

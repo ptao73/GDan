@@ -37,5 +37,13 @@ export default [
       ]
     }
   },
+  {
+    files: ['benchmarks/**/*.js'],
+    languageOptions: {
+      globals: {
+        ...globals.node
+      }
+    }
+  },
   prettier
 ];
