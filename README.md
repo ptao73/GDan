@@ -49,12 +49,27 @@ npm run benchmark
 npm run build
 ```
 
+## Benchmark suite
+
+GDan includes a reproducible benchmark suite of 10 curated 27-card hands across four difficulty tiers (`easy`, `medium`, `hard`, `wildcard`):
+
+```bash
+npm run benchmark
+```
+
+Options:
+- Filter cases: `node benchmarks/run.js --case=wildcard`
+- Custom iterations: `node benchmarks/run.js --iterations=5`
+- Machine-readable JSON output: `node benchmarks/run.js --json`
+
+See [benchmarks/README.md](./benchmarks/README.md) for metric definitions and corpus details.
+
 ## Roadmap
 
 - [x] Add reproducible solver benchmark cases
+- [x] Add performance profiling and search optimization
 - [ ] Improve OCR robustness across mobile screenshots and camera images
 - [ ] Expand English documentation and examples
-- [ ] Add performance profiling for deep search
 - [ ] Add more edge-case tests for wildcard and bomb combinations
 - [ ] Improve accessibility and mobile interaction
 
@@ -107,7 +122,23 @@ src/
 └── main.jsx
 ```
 
+## 基准测试套件（Benchmarks）
+
+项目内置了包含 10 组典型 27 张手牌的可复现基准测试集，覆盖简单（Easy）、中等（Medium）、复杂（Hard）与双逢人配（Wildcard-heavy）牌型：
+
+```bash
+npm run benchmark
+```
+
+常用命令选项：
+- 指定用例或难度：`node benchmarks/run.js --case=wildcard`
+- 设定测算轮次：`node benchmarks/run.js --iterations=5`
+- 输出 JSON 结果：`node benchmarks/run.js --json`
+
+更多用例设计细节与指标说明请参见 [benchmarks/README.md](./benchmarks/README.md)。
+
 ## 注意事项
 
 - AI 搜索已实现超时降级机制，复杂局面下返回结果可能是「较优」而非全局最优。
 - OCR 图片识别依赖 Tesseract.js CDN，首次使用需要联网加载。
+
