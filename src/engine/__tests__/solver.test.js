@@ -152,4 +152,23 @@ describe('compareSchemeResult', () => {
     const b = { score: 20, detail: { handCount: 5 }, splitBombCards: 3, combos: [] };
     expect(compareSchemeResult(a, b)).toBeLessThan(0);
   });
+
+  it('各项指标全同但 signature 不同时按 signature 字母序确定排序', () => {
+    const a = {
+      score: 20,
+      detail: { handCount: 5 },
+      splitBombCards: 0,
+      fireComboCount: 0,
+      signature: 'combo-A'
+    };
+    const b = {
+      score: 20,
+      detail: { handCount: 5 },
+      splitBombCards: 0,
+      fireComboCount: 0,
+      signature: 'combo-B'
+    };
+    expect(compareSchemeResult(a, b)).toBeLessThan(0);
+    expect(compareSchemeResult(b, a)).toBeGreaterThan(0);
+  });
 });

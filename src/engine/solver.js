@@ -53,6 +53,10 @@ function nowMs() {
   return Date.now();
 }
 
+function stringCompare(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
 function cloneCombo(combo) {
   return {
     type: combo.type,
@@ -62,7 +66,8 @@ function cloneCombo(combo) {
     sequence: combo.sequence ? [...combo.sequence] : null,
     suit: combo.suit || null,
     tripleRank: combo.tripleRank || null,
-    pairRank: combo.pairRank || null
+    pairRank: combo.pairRank || null,
+    key: combo.key || null
   };
 }
 
@@ -71,6 +76,15 @@ function cloneComboList(combos) {
 }
 
 function removeCards(remaining, toRemove) {
+  if (toRemove.length === 1) {
+    const id0 = toRemove[0].id;
+    return remaining.filter((card) => card.id !== id0);
+  }
+  if (toRemove.length === 2) {
+    const id0 = toRemove[0].id;
+    const id1 = toRemove[1].id;
+    return remaining.filter((card) => card.id !== id0 && card.id !== id1);
+  }
   const idSet = new Set(toRemove.map((card) => card.id));
   return remaining.filter((card) => !idSet.has(card.id));
 }
@@ -97,46 +111,53 @@ function cyclicRankDistance(rankA, rankB) {
  * 7. 其余牌
  */
 function buildCandidatePool(remaining, anchor, trumpRank) {
-  const ordered = [];
-  const seen = new Set();
+  const ordered = [anchor];
+  const seen = new Set([anchor.id]);
 
-  const addMany = (cards) => {
-    for (const card of cards) {
-      if (seen.has(card.id)) continue;
-      seen.add(card.id);
-      ordered.push(card);
-      if (ordered.length >= MAX_POOL_SIZE) return;
+  const addMatching = (predicate) => {
+    if (ordered.length >= MAX_POOL_SIZE) return;
+    for (let i = 0; i < remaining.length; i += 1) {
+      const card = remaining[i];
+      if (!seen.has(card.id) && predicate(card)) {
+        seen.add(card.id);
+        ordered.push(card);
+        if (ordered.length >= MAX_POOL_SIZE) return;
+      }
     }
   };
 
-  addMany([anchor]);
-
-  addMany(remaining.filter((card) => card.rank === anchor.rank));
-  addMany(remaining.filter((card) => isWildcardCard(card, trumpRank)));
+  addMatching((card) => card.rank === anchor.rank);
+  addMatching((card) => isWildcardCard(card, trumpRank));
 
   if (!isJoker(anchor)) {
-    addMany(remaining.filter((card) => !isJoker(card) && card.suit === anchor.suit));
-    addMany(
-      remaining.filter((card) => !isJoker(card) && cyclicRankDistance(card.rank, anchor.rank) <= 4)
-    );
+    addMatching((card) => !isJoker(card) && card.suit === anchor.suit);
+    addMatching((card) => !isJoker(card) && cyclicRankDistance(card.rank, anchor.rank) <= 4);
   }
 
-  addMany(remaining.filter((card) => isJoker(card)));
-  addMany(remaining);
+  addMatching((card) => isJoker(card));
+  addMatching(() => true);
 
-  return ordered.slice(0, MAX_POOL_SIZE);
+  return ordered;
 }
 
 function subsetsWithAnchor(anchor, pool, size, maxCount) {
   const need = size - 1;
-  const others = pool.filter((card) => card.id !== anchor.id);
-
   if (need === 0) {
     return [[anchor]];
   }
 
+  const others = pool.slice(1);
   if (others.length < need) {
     return [];
+  }
+
+  if (need === 1) {
+    const limit = Math.min(others.length, maxCount);
+    const result = new Array(limit);
+    for (let i = 0; i < limit; i += 1) {
+      result[i] = [anchor, others[i]];
+    }
+    return result;
   }
 
   const result = [];
@@ -181,9 +202,10 @@ function comboFromDefinition(cards, definition) {
 }
 
 function candidateKey(combo) {
+  if (combo.key) return combo.key;
   const cardKey = combo.cards
     .map((card) => card.id)
-    .sort((a, b) => a.localeCompare(b))
+    .sort(stringCompare)
     .join(',');
   return [
     combo.type,
@@ -198,8 +220,8 @@ function candidateKey(combo) {
 
 function schemeKey(combos) {
   return combos
-    .map((combo) => candidateKey(combo))
-    .sort((a, b) => a.localeCompare(b))
+    .map((combo) => combo.key || candidateKey(combo))
+    .sort(stringCompare)
     .join('||');
 }
 
@@ -292,6 +314,7 @@ function generateCandidates(remaining, trumpRank, maxBranch, bombProtection) {
         if (seen.has(key)) continue;
 
         seen.add(key);
+        combo.key = key;
         const component = scoreComboNoRound(combo, trumpRank);
         const estimate = candidateEstimate(combo, component, bombProtection, trumpRank);
 
@@ -325,6 +348,7 @@ function generateCandidates(remaining, trumpRank, maxBranch, bombProtection) {
       tripleRank: null,
       pairRank: null
     };
+    fallback.key = candidateKey(fallback);
     const component = scoreComboNoRound(fallback, trumpRank);
     return [
       {
@@ -487,7 +511,7 @@ export function compareSchemeResult(a, b) {
 
   const aSig = a.signature || schemeKey(a.combos || []);
   const bSig = b.signature || schemeKey(b.combos || []);
-  return aSig.localeCompare(bSig);
+  return stringCompare(aSig, bSig);
 }
 
 function pushTopResult(topResults, topSeen, candidate, topK) {
