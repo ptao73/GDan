@@ -1610,6 +1610,7 @@ button.ghost:hover {
   }
 
   .hero-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 14px;
   }
 
@@ -1627,7 +1628,8 @@ button.ghost:hover {
 
   .import-menu {
     right: auto;
-    left: 0;
+    left: 50%;
+    transform: translateX(-50%);
   }
 
   .hero-compact {
