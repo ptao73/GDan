@@ -12,6 +12,14 @@ import {
 } from '../utils/handImport.js';
 import { localizeError, useI18n } from '../i18n/index.js';
 
+export function isImageFile(file) {
+  if (!file) return false;
+  if (typeof file.type === 'string' && file.type.startsWith('image/')) {
+    return true;
+  }
+  return /\.(png|jpe?g|webp|bmp|gif|heic|heif)$/i.test(file.name || '');
+}
+
 export function useHistory({ setNotice, isSolving }) {
   const { t } = useI18n();
   const [history, setHistory] = useState([]);
@@ -112,14 +120,6 @@ export function useHistory({ setNotice, isSolving }) {
     });
 
     return tesseractLoaderRef.current;
-  }
-
-  function isImageFile(file) {
-    if (!file) return false;
-    if (typeof file.type === 'string' && file.type.startsWith('image/')) {
-      return true;
-    }
-    return /\.(png|jpe?g|webp|bmp|gif|heic|heif)$/i.test(file.name || '');
   }
 
   function applyImportedHandSpecs(
