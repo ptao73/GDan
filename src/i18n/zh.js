@@ -27,6 +27,7 @@ const zh = {
     score: '分',
     totalScore: '总分',
     threat: '威胁',
+    ghostHints: '对手牌型特征提示',
     hands: '手',
     bombs: '炸弹',
     opponent: '对手',
