@@ -1,4 +1,5 @@
 import PlayingCard from './PlayingCard.jsx';
+import { useI18n } from '../i18n/index.js';
 
 const RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 const JOKER_RANKS = ['BJ', 'SJ'];
@@ -18,6 +19,7 @@ export default function CardMatrix({
   isSolving,
   ghostHints = []
 }) {
+  const { t } = useI18n();
   const matrix = {};
   const jokerMatrix = { BJ: [], SJ: [] };
   for (const card of remainingCards) {
@@ -39,15 +41,19 @@ export default function CardMatrix({
   return (
     <div className="matrix-board">
       <div className="matrix-meta">
-        <h2>手牌区</h2>
-        <span className="matrix-trump-badge" aria-label={`当前打 ${trumpRank}`}>
-          打 {trumpRank} <span className="trump-heart">♥</span>
+        <h2>{t('labels.cardArea')}</h2>
+        <span
+          className="matrix-trump-badge"
+          aria-label={`${t('labels.currentLevel')} ${trumpRank}`}
+        >
+          {t('labels.currentLevel')} {trumpRank} <span className="trump-heart">♥</span>
         </span>
         {ghostHints.length > 0 ? (
-          <div className="ghost-hint-strip" aria-label="对手牌型特征提示">
+          <div className="ghost-hint-strip" aria-label={t('godView.threatScore')}>
             {ghostHints.map((hint) => (
               <span key={hint.seat} className="ghost-hint-chip">
-                {hint.seatName}家 炸{hint.bombCount} 手{hint.hands}
+                {t(`seats.${hint.seat}`)} {t('labels.bombs')} {hint.bombCount} {t('labels.hands')}{' '}
+                {hint.hands}
               </span>
             ))}
           </div>

@@ -1,17 +1,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createTableDeal } from '../engine/cards.js';
 import { comboKey } from '../engine/combos.js';
-import { AI_MODE_LABEL_MAP, AI_SEARCH_MODE_OPTIONS, buildDealKey } from './gameStateConstants.js';
+import { AI_SEARCH_MODE_OPTIONS, buildDealKey } from './gameStateConstants.js';
 import { useCardSelection } from './useCardSelection.js';
 import { useAiSearch } from './useAiSearch.js';
 import { useGodView } from './useGodView.js';
 import { useHistory } from './useHistory.js';
+import { localizeError, useI18n } from '../i18n/index.js';
 
 /**
  * 游戏核心状态管理 Hook（主协调层）
  * 组合 useCardSelection、useAiSearch、useGodView、useHistory 四个子 hook
  */
 export function useGameState() {
+  const { t } = useI18n();
   // --- 基本状态 ---
   const [trumpRank, setTrumpRank] = useState('2');
   const [dealtCards, setDealtCards] = useState([]);
@@ -41,7 +43,7 @@ export function useGameState() {
     [aiSearch.aiResult]
   );
 
-  const primaryActionLabel = '新开局';
+  const primaryActionLabel = t('app.newDeal');
   const primaryActionDisabled = aiSearch.isSolving;
   const aiScoreView = aiSearch.aiResult
     ? { total: aiSearch.aiResult.score, detail: aiSearch.aiResult.detail }
@@ -49,7 +51,7 @@ export function useGameState() {
   const aiHasRecommendation = Boolean(
     aiSearch.aiResult && userScore && aiSearch.aiResult.score > userScore.total
   );
-  const aiSearchModeLabel = AI_MODE_LABEL_MAP[aiSearch.aiSearchMode] || AI_MODE_LABEL_MAP.balanced;
+  const aiSearchModeLabel = t(`aiModes.${aiSearch.aiSearchMode}`);
 
   // --- 副作用 ---
   useEffect(() => {
@@ -83,11 +85,11 @@ export function useGameState() {
 
   function startNewDeal() {
     if (aiSearch.isSolving) {
-      setNotice('AI 计算中，请等待当前分析完成。');
+      setNotice(t('notices.waitingAi'));
       return;
     }
 
-    aiSearch.cancelPendingSearches('新牌局已开始，取消旧搜索。');
+    aiSearch.cancelPendingSearches(t('notices.aiBusy'));
     aiSearch.resetPrecomputeState();
     godView.resetGodViewPrecomputeState();
 
@@ -96,14 +98,14 @@ export function useGameState() {
     resetRoundState(eastCards, nextTableDeal.trumpRank, nextTableDeal);
     aiSearch.kickOffPrecompute(eastCards, nextTableDeal.trumpRank, aiSearch.aiSearchMode, true);
     godView.kickOffGodViewPrecompute(nextTableDeal, aiSearch.aiSearchMode, true);
-    setNotice(`新牌局已开始，当前打几：${nextTableDeal.trumpRank}。AI 与上帝视角已后台预计算。`);
+    setNotice(t('notices.newDeal', { rank: nextTableDeal.trumpRank }));
   }
 
   // 初始化
   useEffect(() => {
     startNewDeal();
     historyHook.refreshHistoryAndStats().catch(() => {
-      setNotice('历史数据加载失败');
+      setNotice(t('notices.historyLoadFailed'));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -149,7 +151,7 @@ export function useGameState() {
 
   function handlePrimaryAction() {
     if (aiSearch.isSolving) {
-      setNotice('专家正在计算中，请稍后。');
+      setNotice(t('notices.expertBusy'));
       return;
     }
     startNewDeal();
@@ -192,25 +194,30 @@ export function useGameState() {
     godView.refreshGodView(tableDeal, aiSearch.aiSearchMode);
   }
 
-  function importGodViewHand(cards, seatName) {
+  function importGodViewHand(cards, seat) {
     if (aiSearch.isSolving) {
-      setNotice('AI 计算中，请稍候。');
+      setNotice(t('notices.aiBusy'));
       return;
     }
     const cardSpecs = cards.map((c) => ({ suit: c.suit, rank: c.rank }));
     try {
-      historyHook.applyImportedHandSpecs(cardSpecs, trumpRank, `${seatName}家手牌导入`, {
+      historyHook.applyImportedHandSpecs(
+        cardSpecs,
         trumpRank,
-        aiSearchMode: aiSearch.aiSearchMode,
-        cancelPendingSearches: aiSearch.cancelPendingSearches,
-        resetPrecomputeState: aiSearch.resetPrecomputeState,
-        resetGodViewPrecomputeState: godView.resetGodViewPrecomputeState,
-        resetRoundState,
-        kickOffPrecompute: aiSearch.kickOffPrecompute,
-        kickOffGodViewPrecompute: godView.kickOffGodViewPrecompute
-      });
+        `${t('labels.handImport')} (${t(`seats.${seat}`)})`,
+        {
+          trumpRank,
+          aiSearchMode: aiSearch.aiSearchMode,
+          cancelPendingSearches: aiSearch.cancelPendingSearches,
+          resetPrecomputeState: aiSearch.resetPrecomputeState,
+          resetGodViewPrecomputeState: godView.resetGodViewPrecomputeState,
+          resetRoundState,
+          kickOffPrecompute: aiSearch.kickOffPrecompute,
+          kickOffGodViewPrecompute: godView.kickOffGodViewPrecompute
+        }
+      );
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '导入失败。');
+      setNotice(localizeError(error, t));
     }
   }
 
@@ -242,6 +249,7 @@ export function useGameState() {
     stats: historyHook.stats,
     notice,
     importInputRef: historyHook.importInputRef,
+    importInputAccept: historyHook.importInputAccept,
     remainingCards: cardSelection.remainingCards,
     selectedCards: cardSelection.selectedCards,
     candidateTypes: cardSelection.candidateTypes,
@@ -249,6 +257,7 @@ export function useGameState() {
     aiComboKeySet,
     isSolving: aiSearch.isSolving,
     isImportingHand: historyHook.isImportingHand,
+    ocrStatus: historyHook.ocrStatus,
     assignedCardsCount: cardSelection.assignedCardsCount,
     matrixCounts: cardSelection.matrixCounts,
     rankTotals: cardSelection.rankTotals,

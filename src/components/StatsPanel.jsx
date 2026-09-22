@@ -1,36 +1,39 @@
 import './StatsPanel.css';
+import { useI18n } from '../i18n/index.js';
 
 // 分差分布条形图数据定义
 const BUCKET_CONFIG = [
-  { key: 'equal', label: '=0分', color: 'green' },
-  { key: 'close', label: '1-2分', color: 'blue' },
-  { key: 'medium', label: '3-5分', color: 'orange' },
-  { key: 'wide', label: '6+分', color: 'red' }
+  { key: 'equal', labelKey: 'panels.gapEqual', color: 'green' },
+  { key: 'close', labelKey: 'panels.gapClose', color: 'blue' },
+  { key: 'medium', labelKey: 'panels.gapMedium', color: 'orange' },
+  { key: 'wide', labelKey: 'panels.gapWide', color: 'red' }
 ];
 
 export default function StatsPanel({ stats }) {
+  const { t } = useI18n();
+
   return (
     <article className="panel">
-      <h2>统计分析</h2>
+      <h2>{t('panels.stats')}</h2>
       {stats ? (
         <>
           <div className="score-grid compact">
-            <p>总局数：{stats.totalGames}</p>
-            <p>最优命中率：{stats.hitRate}%</p>
-            <p>平均分差：{stats.avgGap}</p>
-            <p>用户平均手数：{stats.userHandsAvg}</p>
-            <p>AI平均手数：{stats.aiHandsAvg}</p>
-            <p>用户平均炸弹数：{stats.userBombAvg}</p>
-            <p>AI平均炸弹数：{stats.aiBombAvg}</p>
+            <p>{t('panels.totalGames', { count: stats.totalGames })}</p>
+            <p>{t('panels.hitRate', { value: stats.hitRate })}</p>
+            <p>{t('panels.averageGap', { value: stats.avgGap })}</p>
+            <p>{t('panels.userHandsAvg', { value: stats.userHandsAvg })}</p>
+            <p>{t('panels.aiHandsAvg', { value: stats.aiHandsAvg })}</p>
+            <p>{t('panels.userBombAvg', { value: stats.userBombAvg })}</p>
+            <p>{t('panels.aiBombAvg', { value: stats.aiBombAvg })}</p>
           </div>
 
           {/* 分差分布 — CSS 横向条形图 */}
           <GapBarChart buckets={stats.gapBuckets} />
 
-          <h3>建议</h3>
+          <h3>{t('panels.suggestions')}</h3>
           <ul className="suggest-list">
             {stats.suggestions.map((item, index) => (
-              <li key={`${item}-${index}`}>{item}</li>
+              <li key={`${item.key || item}-${index}`}>{translateSuggestion(item, t)}</li>
             ))}
           </ul>
         </>
@@ -47,15 +50,17 @@ export default function StatsPanel({ stats }) {
 }
 
 function GapBarChart({ buckets }) {
+  const { t } = useI18n();
   const items = BUCKET_CONFIG.map((cfg) => ({
     ...cfg,
+    label: t(cfg.labelKey),
     count: buckets[cfg.key] || 0
   }));
   const maxCount = Math.max(...items.map((b) => b.count), 1);
 
   return (
     <div className="stats-bar-chart">
-      <h3>分差分布</h3>
+      <h3>{t('panels.gapDistribution')}</h3>
       {items.map((b) => (
         <div key={b.key} className="stats-bar-row">
           <span className="stats-bar-label">{b.label}</span>
@@ -73,4 +78,11 @@ function GapBarChart({ buckets }) {
       ))}
     </div>
   );
+}
+
+function translateSuggestion(item, t) {
+  if (typeof item === 'object' && item?.key) {
+    return t(`statsSuggestions.${item.key}`, item.params);
+  }
+  return item;
 }

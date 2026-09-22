@@ -92,28 +92,28 @@ function buildSuggestions(stats) {
   const suggestions = [];
 
   if (stats.totalGames < 6) {
-    suggestions.push('样本局数较少，建议先完成至少 20 局再看偏好结论。');
+    suggestions.push({ key: 'fewSamples' });
     return suggestions;
   }
 
   if (stats.avgGap > 4) {
-    suggestions.push('你与 AI 平均分差偏大，优先练习减少手数与保留高价值炸弹。');
+    suggestions.push({ key: 'largeGap' });
   }
 
   if (stats.userBombAvg + 0.35 < stats.aiBombAvg) {
-    suggestions.push('你偏向拆炸弹去补结构，统计显示可尝试提高炸弹保留率。');
+    suggestions.push({ key: 'fewerBombs' });
   }
 
   if (stats.userHandsAvg - stats.aiHandsAvg > 0.6) {
-    suggestions.push('你的平均手数高于 AI，建议优先考虑顺子/木板降低总手数。');
+    suggestions.push({ key: 'moreHands' });
   }
 
   if (stats.wildcardAsSingleRate > 0.4) {
-    suggestions.push('逢人配作为单张留存比例偏高，可尝试优先用于高收益结构。');
+    suggestions.push({ key: 'wildcardSingles' });
   }
 
   if (suggestions.length === 0) {
-    suggestions.push('当前组牌习惯较稳定，建议继续提升复杂牌局下的手数控制。');
+    suggestions.push({ key: 'stable' });
   }
 
   return suggestions;
@@ -139,7 +139,7 @@ function buildStats(records) {
       userHandsAvg: 0,
       aiHandsAvg: 0,
       wildcardAsSingleRate: 0,
-      suggestions: ['暂无历史数据，先开始组牌训练。']
+      suggestions: [{ key: 'empty' }]
     };
   }
 

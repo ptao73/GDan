@@ -7,22 +7,16 @@ import StatsPanel from './components/StatsPanel.jsx';
 import HistoryPanel from './components/HistoryPanel.jsx';
 import GodViewPanel from './components/GodViewPanel.jsx';
 import OcrReviewPanel from './components/OcrReviewPanel.jsx';
-
-const OCR_STATUS_LABELS = {
-  'loading-engine': '正在加载 OCR 引擎...',
-  recognizing: '正在识别图片...',
-  parsing: '正在解析牌面...',
-  deduplicating: '正在移除重复识别...',
-  review: '需要审查。'
-};
+import { useI18n } from './i18n/index.js';
 
 export default function App() {
   const g = useGameState();
+  const { t } = useI18n();
 
   // 智能按钮：有选中且满足组牌规则 → 确认成组；否则 → 自动补全
   const canConfirm = !g.isSolving && g.selectedCards.length > 0 && g.candidateTypes.length > 0;
   const smartAction = canConfirm ? g.confirmGroup : g.autoCompleteAndSubmit;
-  const smartActionLabel = canConfirm ? '确认成组' : '自动补全';
+  const smartActionLabel = canConfirm ? t('app.confirmGroup') : t('app.autoComplete');
   const smartActionIcon = canConfirm ? '✓' : '⚡';
   const smartActionDisabled = canConfirm
     ? false
@@ -58,7 +52,7 @@ export default function App() {
 
       {g.ocrStatus !== 'idle' ? (
         <p className="ocr-status" role="status">
-          {OCR_STATUS_LABELS[g.ocrStatus] || g.ocrStatus}
+          {t(`import.status.${g.ocrStatus}`)}
         </p>
       ) : null}
 
@@ -93,7 +87,7 @@ export default function App() {
         </article>
 
         <article className="panel combos-panel">
-          <h2>已组牌区</h2>
+          <h2>{t('labels.groupedHands')}</h2>
           <ComboList
             userCombos={g.userCombos}
             trumpRank={g.trumpRank}

@@ -1,12 +1,17 @@
-import { cardLabel } from '../engine/cards.js';
 import { isBomb } from '../engine/combos.js';
 import { scoreComboNoRound, scoreScheme } from '../engine/scoring.js';
 import { comboRankVector, compareComboDisplayOrder } from '../utils/comboDisplay.js';
+import {
+  localizedCardLabel,
+  localizedComboLabel,
+  localizeGodExplanation,
+  useI18n
+} from '../i18n/index.js';
 
-function roleText(role) {
-  if (role === 'self') return '我';
-  if (role === 'teammate') return '队友';
-  return '对手';
+function roleText(role, t) {
+  if (role === 'self') return t('labels.self');
+  if (role === 'teammate') return t('labels.teammate');
+  return t('labels.opponent');
 }
 
 function comboCategory(item) {
@@ -32,9 +37,9 @@ function buildSeatComboItems(player, trumpRank) {
     .sort(compareComboDisplayOrder);
 }
 
-function comboLineText(item) {
-  const cards = (item.combo.cards || []).map((card) => cardLabel(card)).join(' ');
-  return `${item.combo.label}（${item.total}分）：${cards}`;
+function comboLineText(item, t) {
+  const cards = (item.combo.cards || []).map((card) => localizedCardLabel(card, t)).join(' ');
+  return `${localizedComboLabel(item.combo, t)} (${item.total} ${t('labels.score')}): ${cards}`;
 }
 
 export default function GodViewPanel({
@@ -44,11 +49,13 @@ export default function GodViewPanel({
   onRefresh,
   onImportHand
 }) {
+  const { t } = useI18n();
+
   if (godViewStatus === 'running') {
     return (
       <article className="panel god-view-panel">
-        <h2>上帝视角</h2>
-        <p className="hint">正在计算四家全局分析，请稍候...</p>
+        <h2>{t('app.godView')}</h2>
+        <p className="hint">{t('godView.running')}</p>
       </article>
     );
   }
@@ -56,8 +63,8 @@ export default function GodViewPanel({
   if (godViewStatus === 'failed') {
     return (
       <article className="panel god-view-panel">
-        <h2>上帝视角</h2>
-        <p className="warn">分析失败，请重新开局或再次点击上帝视角。</p>
+        <h2>{t('app.godView')}</h2>
+        <p className="warn">{t('godView.failed')}</p>
       </article>
     );
   }
@@ -65,31 +72,31 @@ export default function GodViewPanel({
   if (!godViewData) {
     return (
       <article className="panel god-view-panel">
-        <h2>上帝视角</h2>
-        <p className="hint">发牌后会后台预计算。点击“上帝视角”可查看四家牌局因果分析。</p>
+        <h2>{t('app.godView')}</h2>
+        <p className="hint">{t('godView.waiting')}</p>
       </article>
     );
   }
 
   return (
     <article className="panel god-view-panel">
-      <h2>上帝视角</h2>
+      <h2>{t('app.godView')}</h2>
       {godViewStale && (
         <p
           className="warn"
           style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '8px' }}
         >
-          组牌已变化，当前分析可能不准确
+          {t('godView.stale')}
           {onRefresh && (
             <button className="ghost" onClick={onRefresh} style={{ fontSize: '0.85em' }}>
-              刷新分析
+              {t('godView.refresh')}
             </button>
           )}
         </p>
       )}
       {godViewData.endgameFlag && (
         <p className="warn" style={{ marginBottom: '8px' }}>
-          ⚠ 残局模式 — 对手理论手数 ≤ 4，每一手牌至关重要
+          {t('godView.endgame')}
         </p>
       )}
       <div className="god-players-grid">
@@ -102,14 +109,21 @@ export default function GodViewPanel({
             <section key={player.seat} className={`god-seat role-${player.role}`}>
               <header>
                 <h3>
-                  {player.seatName}家（{roleText(player.role)}）
+                  {t('godView.seat', {
+                    seat: t(`seats.${player.seat}`),
+                    role: roleText(player.role, t)
+                  })}
                 </h3>
-                <span className="god-seat-score">总分 {seatTotal}</span>
-                <span className="god-threat">威胁 {player.threatScore}</span>
+                <span className="god-seat-score">
+                  {t('godView.seatScore', { score: seatTotal })}
+                </span>
+                <span className="god-threat">
+                  {t('godView.threatScore', { score: player.threatScore })}
+                </span>
               </header>
               <ul className="combo-list god-seat-combo-list">
                 {seatItems.length === 0 ? (
-                  <li className="combo-empty">暂无牌形建议。</li>
+                  <li className="combo-empty">{t('godView.noSuggestion')}</li>
                 ) : (
                   seatItems.map((item) => {
                     const key = `${player.seat}-${item.originIndex}-${item.combo.type}`;
@@ -117,7 +131,7 @@ export default function GodViewPanel({
                     return (
                       <li key={key} className={`combo-${category}`}>
                         <div className="combo-line">
-                          <span>{comboLineText(item)}</span>
+                          <span>{comboLineText(item, t)}</span>
                         </div>
                       </li>
                     );
@@ -126,9 +140,9 @@ export default function GodViewPanel({
               </ul>
               <button
                 className="ghost god-import-btn"
-                onClick={() => onImportHand(player.cards, player.seatName)}
+                onClick={() => onImportHand(player.cards, player.seat)}
               >
-                导入手牌（{player.cards.length}）
+                {t('godView.importSeatHand', { count: player.cards.length })}
               </button>
             </section>
           );
@@ -137,42 +151,54 @@ export default function GodViewPanel({
 
       <div className="god-analysis-stack">
         <div className="god-overview-grid">
-          <p>对手炸弹：{godViewData.overview.opponentBombTotal}</p>
-          <p>队友炸弹：{godViewData.overview.teammateBombTotal}</p>
-          <p>阻断概率：{godViewData.realtime.interruptionProbability}%</p>
-          <p>接风价值：{godViewData.realtime.backupValue}%</p>
+          <p>
+            {t('godView.overviewOpponentBombs', { count: godViewData.overview.opponentBombTotal })}
+          </p>
+          <p>
+            {t('godView.overviewTeammateBombs', { count: godViewData.overview.teammateBombTotal })}
+          </p>
+          <p>
+            {t('godView.interruption', { value: godViewData.realtime.interruptionProbability })}
+          </p>
+          <p>{t('godView.backup', { value: godViewData.realtime.backupValue })}</p>
         </div>
 
         <div className="god-composition">
-          <h3>组牌分析</h3>
+          <h3>{t('godView.composition')}</h3>
           <p>
-            手{godViewData.composition.handCount} 炸{godViewData.composition.bombCount} 控
-            {godViewData.composition.keyScore} 闷{godViewData.composition.interruptionProbability}%
-            接风{godViewData.composition.controlRecapture}%
+            {t('godView.compositionSummary', {
+              hands: godViewData.composition.handCount,
+              bombs: godViewData.composition.bombCount,
+              key: godViewData.composition.keyScore,
+              interruption: godViewData.composition.interruptionProbability,
+              recapture: godViewData.composition.controlRecapture
+            })}
           </p>
           {godViewData.composition.explanation && (
-            <p className="god-explanation">{godViewData.composition.explanation}</p>
+            <p className="god-explanation">
+              {localizeGodExplanation(godViewData.composition.explanation, t)}
+            </p>
           )}
         </div>
 
         {godViewData.tribute && (
           <div className="god-tribute">
-            <h3>进贡分析</h3>
+            <h3>{t('godView.tribute')}</h3>
             {godViewData.tribute.best && (
               <p>
-                最优进贡：
-                {cardLabel(godViewData.tribute.best.card)}
-                （对手炸弹变化 {godViewData.tribute.best.oppFireDelta >= 0 ? '+' : ''}
-                {godViewData.tribute.best.oppFireDelta}）
+                {t('godView.bestTribute', {
+                  card: localizedCardLabel(godViewData.tribute.best.card, t),
+                  delta: `${godViewData.tribute.best.oppFireDelta >= 0 ? '+' : ''}${godViewData.tribute.best.oppFireDelta}`
+                })}
               </p>
             )}
             {godViewData.tribute.worst &&
               godViewData.tribute.worst !== godViewData.tribute.best && (
                 <p className="warn">
-                  最差进贡：
-                  {cardLabel(godViewData.tribute.worst.card)}
-                  （对手炸弹变化 {godViewData.tribute.worst.oppFireDelta >= 0 ? '+' : ''}
-                  {godViewData.tribute.worst.oppFireDelta}）
+                  {t('godView.worstTribute', {
+                    card: localizedCardLabel(godViewData.tribute.worst.card, t),
+                    delta: `${godViewData.tribute.worst.oppFireDelta >= 0 ? '+' : ''}${godViewData.tribute.worst.oppFireDelta}`
+                  })}
                 </p>
               )}
           </div>

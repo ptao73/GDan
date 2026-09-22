@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { STANDARD_RANKS, SUITS } from '../engine/cards.js';
-import { HAND_CARD_COUNT, toReadableCard } from '../utils/handImport.js';
+import { HAND_CARD_COUNT } from '../utils/handImport.js';
+import { localizedCardSpecLabel, useI18n } from '../i18n/index.js';
 
 const SUIT_LABELS = { S: '♠', H: '♥', C: '♣', D: '♦' };
 
 export default function OcrReviewPanel({ ocrReview, onConfirm, onCancel }) {
+  const { t } = useI18n();
   const [cards, setCards] = useState(() => [...ocrReview.cardSpecs]);
   const [addSuit, setAddSuit] = useState('S');
   const [addRank, setAddRank] = useState('A');
@@ -27,18 +29,27 @@ export default function OcrReviewPanel({ ocrReview, onConfirm, onCancel }) {
 
   return (
     <section className="panel ocr-review-panel">
-      <h2>OCR 识别审查</h2>
+      <h2>{t('import.reviewTitle')}</h2>
       <p className="ocr-review-info">
-        原始识别 {ocrReview.rawCount} 张，去重后 {cards.length} 张
-        {diff > 0 ? `，还需添加 ${diff} 张` : diff < 0 ? `，需删除 ${-diff} 张` : '，数量正确'}
+        {t('import.originalCount', { count: ocrReview.rawCount, deduplicated: cards.length })}
+        {diff > 0
+          ? t('import.addNeeded', { count: diff })
+          : diff < 0
+            ? t('import.deleteNeeded', { count: -diff })
+            : t('import.countCorrect')}
       </p>
 
       {/* 牌面标签列表 */}
       <div className="ocr-review-tags">
         {cards.map((spec, index) => (
           <span key={`${spec.suit}-${spec.rank}-${index}`} className="ocr-tag">
-            {toReadableCard(spec)}
-            <button className="ocr-tag-remove" onClick={() => removeCard(index)} type="button">
+            {localizedCardSpecLabel(spec, t)}
+            <button
+              className="ocr-tag-remove"
+              onClick={() => removeCard(index)}
+              type="button"
+              aria-label={t('import.removeCard')}
+            >
               ×
             </button>
           </span>
@@ -62,21 +73,21 @@ export default function OcrReviewPanel({ ocrReview, onConfirm, onCancel }) {
           ))}
         </select>
         <button type="button" onClick={addCard} disabled={cards.length >= HAND_CARD_COUNT}>
-          添加
+          {t('import.add')}
         </button>
         <button
           type="button"
           onClick={() => addJoker('SJ')}
           disabled={cards.length >= HAND_CARD_COUNT}
         >
-          +小王
+          {t('import.addSmallJoker')}
         </button>
         <button
           type="button"
           onClick={() => addJoker('BJ')}
           disabled={cards.length >= HAND_CARD_COUNT}
         >
-          +大王
+          {t('import.addBigJoker')}
         </button>
       </div>
 
@@ -87,10 +98,10 @@ export default function OcrReviewPanel({ ocrReview, onConfirm, onCancel }) {
           onClick={() => onConfirm(cards)}
           disabled={cards.length !== HAND_CARD_COUNT}
         >
-          确认导入（{cards.length}/{HAND_CARD_COUNT}）
+          {t('import.confirm', { count: cards.length, total: HAND_CARD_COUNT })}
         </button>
         <button type="button" className="ghost" onClick={onCancel}>
-          取消
+          {t('import.cancel')}
         </button>
       </div>
     </section>
