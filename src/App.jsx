@@ -8,6 +8,14 @@ import HistoryPanel from './components/HistoryPanel.jsx';
 import GodViewPanel from './components/GodViewPanel.jsx';
 import OcrReviewPanel from './components/OcrReviewPanel.jsx';
 
+const OCR_STATUS_LABELS = {
+  'loading-engine': '正在加载 OCR 引擎...',
+  recognizing: '正在识别图片...',
+  parsing: '正在解析牌面...',
+  deduplicating: '正在移除重复识别...',
+  review: '需要审查。'
+};
+
 export default function App() {
   const g = useGameState();
 
@@ -44,9 +52,15 @@ export default function App() {
         ref={g.importInputRef}
         className="hidden-input"
         type="file"
-        accept="application/json,image/*"
+        accept={g.importInputAccept}
         onChange={g.importHistory}
       />
+
+      {g.ocrStatus !== 'idle' ? (
+        <p className="ocr-status" role="status">
+          {OCR_STATUS_LABELS[g.ocrStatus] || g.ocrStatus}
+        </p>
+      ) : null}
 
       {/* Toast 通知：右下角浮动，key 驱动动画重播 */}
       {g.notice ? (

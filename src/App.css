@@ -212,6 +212,10 @@ button.hero-action:disabled:hover {
   z-index: 80;
 }
 
+.import-menu {
+  width: min(240px, 72vw);
+}
+
 .hero-tools-item {
   width: 100%;
   min-height: 34px;
@@ -443,6 +447,21 @@ button.ghost:hover {
   animation:
     toast-in 240ms ease,
     toast-out 400ms ease 4.2s forwards;
+}
+
+.ocr-status {
+  position: fixed;
+  left: 18px;
+  bottom: calc(14px + env(safe-area-inset-bottom));
+  z-index: 49;
+  max-width: min(360px, calc(100vw - 20px));
+  margin: 0;
+  padding: 9px 13px;
+  border-radius: 11px;
+  border: 1px solid rgba(47, 95, 123, 0.36);
+  background: rgba(239, 248, 255, 0.96);
+  color: var(--brand-deep);
+  box-shadow: 0 8px 20px rgba(23, 56, 76, 0.16);
 }
 
 .layout-grid {
@@ -1556,6 +1575,11 @@ button.ghost:hover {
     width: min(300px, 92vw);
   }
 
+  .import-menu {
+    right: auto;
+    left: 0;
+  }
+
   .hero-compact {
     min-height: 96px;
     padding: 14px 12px 12px;
@@ -1654,6 +1678,13 @@ button.ghost:hover {
     right: 10px;
     left: 10px;
     bottom: calc(12px + env(safe-area-inset-bottom));
+    max-width: none;
+  }
+
+  .ocr-status {
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
     max-width: none;
   }
 }

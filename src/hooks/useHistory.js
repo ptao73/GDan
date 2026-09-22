@@ -16,11 +16,14 @@ export function useHistory({ setNotice, isSolving }) {
   const [stats, setStats] = useState(null);
   const [isImportingHand, setIsImportingHand] = useState(false);
   const [ocrReview, setOcrReview] = useState(null);
+  const [ocrStatus, setOcrStatus] = useState('idle');
+  const [importInputAccept, setImportInputAccept] = useState('application/json');
   // 缓存 importContext，供审查确认时使用
   const ocrImportContextRef = useRef(null);
 
   const importInputRef = useRef(null);
   const tesseractLoaderRef = useRef(null);
+  const importModeRef = useRef('json');
 
   async function refreshHistoryAndStats() {
     const [nextHistory, nextStats] = await Promise.all([
@@ -47,8 +50,13 @@ export function useHistory({ setNotice, isSolving }) {
     }
   }
 
-  function openImportDialog() {
+  function openImportDialog(mode = 'json') {
     if (isSolving || isImportingHand) return;
+    importModeRef.current = mode;
+    setImportInputAccept(mode === 'image' ? 'image/*' : 'application/json');
+    if (importInputRef.current) {
+      importInputRef.current.accept = mode === 'image' ? 'image/*' : 'application/json';
+    }
     importInputRef.current?.click();
   }
 
@@ -147,16 +155,21 @@ export function useHistory({ setNotice, isSolving }) {
   }
 
   async function importHandFromImageFile(file, importContext) {
+    let needsReview = false;
     setIsImportingHand(true);
+    setOcrStatus('loading-engine');
     setNotice('正在识别图片中的手牌，请稍候...');
     try {
       const tesseract = await loadTesseractRuntime();
+      setOcrStatus('recognizing');
       const result = await tesseract.recognize(file, 'eng+chi_sim');
       const recognizedText = result?.data?.text || '';
+      setOcrStatus('parsing');
       const { trumpRank: recognizedTrumpRank, cardSpecs: rawSpecs } =
         parseHandSpecsFromText(recognizedText);
 
       // OCR 路径专用去重（JSON 路径不需要）
+      setOcrStatus('deduplicating');
       const rawCount = rawSpecs.length;
       const cardSpecs = deduplicateOcrSpecs(rawSpecs);
 
@@ -165,16 +178,20 @@ export function useHistory({ setNotice, isSolving }) {
         applyImportedHandSpecs(cardSpecs, recognizedTrumpRank, '图片识别导入', importContext);
       } else {
         // 数量不符，进入审查面板
+        needsReview = true;
         ocrImportContextRef.current = importContext;
         setOcrReview({ cardSpecs, rawCount, trumpRank: recognizedTrumpRank });
+        setOcrStatus('review');
         setNotice(
           `OCR 识别到 ${rawCount} 张，去重后 ${cardSpecs.length} 张，请审查编辑后确认导入。`
         );
       }
     } catch (error) {
+      setOcrStatus('idle');
       setNotice(error instanceof Error ? error.message : '图片识别导入失败。');
     } finally {
       setIsImportingHand(false);
+      if (!needsReview) setOcrStatus('idle');
     }
   }
 
@@ -182,6 +199,7 @@ export function useHistory({ setNotice, isSolving }) {
     const importContext = ocrImportContextRef.current;
     const trumpRank = ocrReview?.trumpRank;
     setOcrReview(null);
+    setOcrStatus('idle');
     ocrImportContextRef.current = null;
     if (!importContext) return;
     try {
@@ -193,6 +211,7 @@ export function useHistory({ setNotice, isSolving }) {
 
   function cancelOcrReview() {
     setOcrReview(null);
+    setOcrStatus('idle');
     ocrImportContextRef.current = null;
     setNotice('已取消图片识别导入。');
   }
@@ -201,6 +220,12 @@ export function useHistory({ setNotice, isSolving }) {
     const file = event.target.files?.[0];
     if (!file) return;
     try {
+      if (importModeRef.current === 'image' && !isImageFile(file)) {
+        throw new Error('请选择图片文件进行 OCR 导入。');
+      }
+      if (importModeRef.current === 'json' && isImageFile(file)) {
+        throw new Error('请选择 JSON 文件进行导入。');
+      }
       if (isImageFile(file)) {
         await importHandFromImageFile(file, importContext);
         return;
@@ -242,8 +267,10 @@ export function useHistory({ setNotice, isSolving }) {
     history,
     stats,
     isImportingHand,
+    ocrStatus,
     ocrReview,
     importInputRef,
+    importInputAccept,
     refreshHistoryAndStats,
     exportHistory,
     openImportDialog,

@@ -17,6 +17,7 @@ export default function Header({
   trumpRank = '2'
 }) {
   const [compact, setCompact] = useState(false);
+  const [importMenuOpen, setImportMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -58,7 +59,7 @@ export default function Header({
       full: '导入',
       compact: '导入',
       icon: '⇅',
-      onClick: onImport,
+      onClick: () => setImportMenuOpen((open) => !open),
       disabled: importDisabled
     },
     {
@@ -90,21 +91,60 @@ export default function Header({
           <h1>掼蛋组牌评分系统</h1>
         </div>
         <div className="hero-actions" role="group" aria-label="快捷操作">
-          {actionItems.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              className="hero-action"
-              onClick={item.onClick}
-              disabled={item.disabled}
-            >
-              <span className="hero-action-icon" aria-hidden="true">
-                {item.icon}
-              </span>
-              <span className="hero-action-label-full">{item.full}</span>
-              <span className="hero-action-label-compact">{item.compact}</span>
-            </button>
-          ))}
+          {actionItems.map((item) => {
+            const actionButton = (
+              <button
+                type="button"
+                className="hero-action"
+                onClick={item.onClick}
+                disabled={item.disabled}
+                aria-expanded={item.key === 'import' ? importMenuOpen : undefined}
+                aria-haspopup={item.key === 'import' ? 'menu' : undefined}
+              >
+                <span className="hero-action-icon" aria-hidden="true">
+                  {item.icon}
+                </span>
+                <span className="hero-action-label-full">{item.full}</span>
+                <span className="hero-action-label-compact">{item.compact}</span>
+              </button>
+            );
+
+            if (item.key !== 'import') {
+              return <span key={item.key}>{actionButton}</span>;
+            }
+
+            return (
+              <div key={item.key} className="hero-action-slot">
+                {actionButton}
+                {importMenuOpen && !item.disabled ? (
+                  <div className="hero-tools-menu import-menu" role="menu">
+                    <button
+                      type="button"
+                      className="hero-tools-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setImportMenuOpen(false);
+                        onImport('image');
+                      }}
+                    >
+                      图片 / OCR 导入
+                    </button>
+                    <button
+                      type="button"
+                      className="hero-tools-item"
+                      role="menuitem"
+                      onClick={() => {
+                        setImportMenuOpen(false);
+                        onImport('json');
+                      }}
+                    >
+                      JSON 导入
+                    </button>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </div>
       <img
