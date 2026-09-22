@@ -20,10 +20,10 @@ const SUIT_BY_SYMBOL = {
 };
 
 const SUIT_WORD_PATTERNS = [
-  { pattern: /黑桃/gi, suit: 'S' },
-  { pattern: /红桃|紅桃/gi, suit: 'H' },
-  { pattern: /梅花/gi, suit: 'C' },
-  { pattern: /方块|方塊/gi, suit: 'D' }
+  { pattern: /黑桃|SPADES?/gi, suit: 'S' },
+  { pattern: /红桃|紅桃|HEARTS?/gi, suit: 'H' },
+  { pattern: /梅花|CLUBS?/gi, suit: 'C' },
+  { pattern: /方块|方塊|DIAMONDS?/gi, suit: 'D' }
 ];
 
 const JOKER_SMALL_PATTERN = /小王|SMALL\s*JOKER|XIAO\s*WANG|LITTLE\s*JOKER/gi;
