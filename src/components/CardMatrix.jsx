@@ -49,7 +49,7 @@ export default function CardMatrix({
           {t('labels.currentLevel')} {trumpRank} <span className="trump-heart">♥</span>
         </span>
         {ghostHints.length > 0 ? (
-          <div className="ghost-hint-strip" aria-label={t('godView.threatScore')}>
+          <div className="ghost-hint-strip" aria-label={t('labels.ghostHints')}>
             {ghostHints.map((hint) => (
               <span key={hint.seat} className="ghost-hint-chip">
                 {t(`seats.${hint.seat}`)} {t('labels.bombs')} {hint.bombCount} {t('labels.hands')}{' '}

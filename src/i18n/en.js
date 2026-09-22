@@ -23,6 +23,7 @@ const en = {
     score: 'points',
     totalScore: 'Total',
     threat: 'Threat',
+    ghostHints: 'Opponent hand-shape hints',
     hands: 'hands',
     bombs: 'Bombs',
     opponent: 'Opponent',
