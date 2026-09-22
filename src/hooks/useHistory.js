@@ -10,8 +10,10 @@ import {
   parseHandImportJson,
   parseHandSpecsFromText
 } from '../utils/handImport.js';
+import { localizeError, useI18n } from '../i18n/index.js';
 
 export function useHistory({ setNotice, isSolving }) {
+  const { t } = useI18n();
   const [history, setHistory] = useState([]);
   const [stats, setStats] = useState(null);
   const [isImportingHand, setIsImportingHand] = useState(false);
@@ -44,9 +46,9 @@ export function useHistory({ setNotice, isSolving }) {
       link.download = `guandan-history-${Date.now()}.json`;
       link.click();
       URL.revokeObjectURL(url);
-      setNotice('已导出历史数据。');
+      setNotice(t('notices.exportSuccess'));
     } catch (_error) {
-      setNotice('导出失败。');
+      setNotice(t('notices.exportFailed'));
     }
   }
 
@@ -151,14 +153,14 @@ export function useHistory({ setNotice, isSolving }) {
     resetRoundState(eastCards, nextTrumpRank, nextTableDeal);
     kickOffPrecompute(eastCards, nextTrumpRank, aiSearchMode, true);
     kickOffGodViewPrecompute(nextTableDeal, aiSearchMode, true);
-    setNotice(`${sourceLabel}成功：已导入 27 张手牌，当前打几：${nextTrumpRank}。`);
+    setNotice(t('notices.importedHand', { source: sourceLabel, rank: nextTrumpRank }));
   }
 
   async function importHandFromImageFile(file, importContext) {
     let needsReview = false;
     setIsImportingHand(true);
     setOcrStatus('loading-engine');
-    setNotice('正在识别图片中的手牌，请稍候...');
+    setNotice(t('notices.imageRecognition'));
     try {
       const tesseract = await loadTesseractRuntime();
       setOcrStatus('recognizing');
@@ -175,20 +177,23 @@ export function useHistory({ setNotice, isSolving }) {
 
       if (cardSpecs.length === HAND_CARD_COUNT) {
         // 去重后恰好 27 张，直接导入
-        applyImportedHandSpecs(cardSpecs, recognizedTrumpRank, '图片识别导入', importContext);
+        applyImportedHandSpecs(
+          cardSpecs,
+          recognizedTrumpRank,
+          t('labels.imageOcrImport'),
+          importContext
+        );
       } else {
         // 数量不符，进入审查面板
         needsReview = true;
         ocrImportContextRef.current = importContext;
         setOcrReview({ cardSpecs, rawCount, trumpRank: recognizedTrumpRank });
         setOcrStatus('review');
-        setNotice(
-          `OCR 识别到 ${rawCount} 张，去重后 ${cardSpecs.length} 张，请审查编辑后确认导入。`
-        );
+        setNotice(t('notices.ocrReview', { raw: rawCount, deduplicated: cardSpecs.length }));
       }
     } catch (error) {
       setOcrStatus('idle');
-      setNotice(error instanceof Error ? error.message : '图片识别导入失败。');
+      setNotice(localizeError(error, t));
     } finally {
       setIsImportingHand(false);
       if (!needsReview) setOcrStatus('idle');
@@ -203,9 +208,9 @@ export function useHistory({ setNotice, isSolving }) {
     ocrImportContextRef.current = null;
     if (!importContext) return;
     try {
-      applyImportedHandSpecs(finalSpecs, trumpRank, '图片识别导入', importContext);
+      applyImportedHandSpecs(finalSpecs, trumpRank, t('labels.imageOcrImport'), importContext);
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '导入失败。');
+      setNotice(localizeError(error, t));
     }
   }
 
@@ -213,7 +218,7 @@ export function useHistory({ setNotice, isSolving }) {
     setOcrReview(null);
     setOcrStatus('idle');
     ocrImportContextRef.current = null;
-    setNotice('已取消图片识别导入。');
+    setNotice(t('notices.cancelOcr'));
   }
 
   async function importHistory(event, importContext) {
@@ -221,10 +226,10 @@ export function useHistory({ setNotice, isSolving }) {
     if (!file) return;
     try {
       if (importModeRef.current === 'image' && !isImageFile(file)) {
-        throw new Error('请选择图片文件进行 OCR 导入。');
+        throw new Error(t('notices.chooseImage'));
       }
       if (importModeRef.current === 'json' && isImageFile(file)) {
-        throw new Error('请选择 JSON 文件进行导入。');
+        throw new Error(t('notices.chooseJson'));
       }
       if (isImageFile(file)) {
         await importHandFromImageFile(file, importContext);
@@ -244,7 +249,7 @@ export function useHistory({ setNotice, isSolving }) {
         applyImportedHandSpecs(
           importedHand.cardSpecs,
           importedHand.trumpRank,
-          'JSON 导入',
+          t('labels.jsonImport'),
           importContext
         );
         return;
@@ -252,9 +257,9 @@ export function useHistory({ setNotice, isSolving }) {
 
       const count = await DataService.importData(text);
       await refreshHistoryAndStats();
-      setNotice(`历史导入完成，处理 ${count} 条记录。`);
+      setNotice(t('notices.historyImported', { count }));
     } catch (error) {
-      setNotice(error instanceof Error ? error.message : '导入失败。');
+      setNotice(localizeError(error, t));
     } finally {
       setIsImportingHand(false);
       if (importInputRef.current) {

@@ -5,7 +5,6 @@ import { solveBestScheme } from '../engine/solver.js';
 import { DataService } from '../services/dataService.js';
 import { useWorker } from './useWorker.js';
 import {
-  AI_MODE_LABEL_MAP,
   AI_MODE_STORAGE_KEY,
   AI_SEARCH_PROFILES_BY_MODE,
   buildDealKey,
@@ -14,8 +13,10 @@ import {
   phaseOneSize,
   resolveAiProfiles
 } from './gameStateConstants.js';
+import { useI18n } from '../i18n/index.js';
 
 export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
+  const { t } = useI18n();
   const [aiResult, setAiResult] = useState(null);
   const [aiStatus, setAiStatus] = useState('idle');
   const [aiSearchMode, setAiSearchModeState] = useState('balanced');
@@ -186,7 +187,7 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
         searchAttempts: attemptCount,
         surpassedUser: typeof targetScore === 'number' ? resolvedBest.score > targetScore : false,
         searchMode: modeKey,
-        searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced
+        searchModeLabel: t(`aiModes.${modeKey}`)
       },
       usedFallback,
       surpassedTarget
@@ -311,7 +312,7 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
           ...cached.ai,
           surpassedUser: cached.ai.score > targetScore,
           searchMode: modeKey,
-          searchModeLabel: AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced,
+          searchModeLabel: t(`aiModes.${modeKey}`),
           fromPrecompute: true
         },
         usedFallback: cached.usedFallback
@@ -381,12 +382,12 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
     refreshHistoryAndStats
   }) {
     if (isSolving) {
-      setNotice('专家正在计算中，请勿重复提交。');
+      setNotice(t('notices.scoringBusy'));
       return false;
     }
 
     if (remainingCards.length > 0) {
-      setNotice(`还有 ${remainingCards.length} 张牌未分配，请完成全部 27 张组牌。`);
+      setNotice(t('notices.incomplete', { count: remainingCards.length }));
       return false;
     }
 
@@ -397,7 +398,7 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
 
       const modeKey = aiSearchMode;
       const profiles = resolveAiProfiles(modeKey, iosOptimized);
-      const modeLabel = AI_MODE_LABEL_MAP[modeKey] || AI_MODE_LABEL_MAP.balanced;
+      const modeLabel = t(`aiModes.${modeKey}`);
       const { ai, usedFallback } = await findAiRecommendation(
         userScoreResult.total,
         profiles,
@@ -440,31 +441,30 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
         await refreshHistoryAndStats();
         if (ai.score > userScoreResult.total) {
           if (ai.fromPrecompute) {
-            setNotice(
-              `已使用后台预计算结果，找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮）并保存本局。`
-            );
+            setNotice(t('ai.fromPrecompute', { mode: modeLabel, attempts: ai.searchAttempts }));
           } else {
             setNotice(
               usedFallback
-                ? `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮，含降级计算）并保存本局。`
-                : `已找到更高分 AI 推荐（${modeLabel}，第 ${ai.searchAttempts} 轮）并保存本局。`
+                ? t('ai.recommendationFallback', {
+                    mode: modeLabel,
+                    attempts: ai.searchAttempts
+                  })
+                : t('ai.recommendation', { mode: modeLabel, attempts: ai.searchAttempts })
             );
           }
         } else if (ai.fromPrecompute) {
-          setNotice(`已直接给出后台预计算结果（${modeLabel}），你的方案可能已接近最优。`);
+          setNotice(t('ai.precomputedOnly', { mode: modeLabel }));
         } else {
-          setNotice(
-            `已执行${modeLabel}多轮搜索，仍未找到高于玩家得分的方案；你的方案可能已接近最优。`
-          );
+          setNotice(t('ai.noBetter', { mode: modeLabel }));
         }
       } catch (_error) {
-        setNotice('本局评分完成，但保存历史失败。');
+        setNotice(t('notices.scoreSaved'));
       }
       return { success: true, userScoreResult };
     } catch (_error) {
       setAiStatus('idle');
       setAiSearchProgress(null);
-      setNotice('AI 计算失败，请重试。');
+      setNotice(t('notices.aiFailed'));
       return false;
     }
   }
@@ -474,7 +474,7 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
     { kickOffPrecomputeFn, kickOffGodViewPrecomputeFn, tableDeal }
   ) {
     if (isSolving) {
-      setNotice('AI 正在计算中，暂不可切换搜索档位。');
+      setNotice(t('notices.searchBusy'));
       return;
     }
     if (!AI_SEARCH_PROFILES_BY_MODE[nextMode]) {
@@ -489,7 +489,7 @@ export function useAiSearch({ trumpRank, dealtCards, setNotice }) {
       }
     }
 
-    setNotice(`已切换 AI 搜索档位：${AI_MODE_LABEL_MAP[nextMode]}（后台将重算当前牌局）`);
+    setNotice(t('ai.modeChanged', { mode: t(`aiModes.${nextMode}`) }));
   }
 
   return {

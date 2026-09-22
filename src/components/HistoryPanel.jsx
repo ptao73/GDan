@@ -1,20 +1,30 @@
-function formatTime(timestamp) {
-  return new Date(timestamp).toLocaleString('zh-CN', { hour12: false });
+import { languageLocale, useI18n } from '../i18n/index.js';
+
+function formatTime(timestamp, language) {
+  return new Date(timestamp).toLocaleString(languageLocale(language), { hour12: false });
 }
 
 export default function HistoryPanel({ history }) {
+  const { language, t } = useI18n();
+
   return (
     <article className="panel">
-      <h2>最近对局</h2>
+      <h2>{t('panels.recentGames')}</h2>
       <ul className="history-list">
         {history.map((item) => (
           <li key={item.id}>
-            <span>{formatTime(item.timestamp)}</span>
-            <span>打几 {item.trumpRank}</span>
-            <span>用户 {item.userScore}</span>
-            <span>AI {item.aiScore}</span>
+            <span>{formatTime(item.timestamp, language)}</span>
+            <span>{t('panels.historyLevel', { rank: item.trumpRank })}</span>
             <span>
-              {item.isOptimal ? '命中最优' : `差 ${Math.max(0, item.aiScore - item.userScore)} 分`}
+              {t('labels.user')} {item.userScore}
+            </span>
+            <span>
+              {t('labels.ai')} {item.aiScore}
+            </span>
+            <span>
+              {item.isOptimal
+                ? t('panels.optimal')
+                : t('panels.gap', { count: Math.max(0, item.aiScore - item.userScore) })}
             </span>
           </li>
         ))}

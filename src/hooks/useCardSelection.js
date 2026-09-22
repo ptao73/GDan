@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { comboKey, createCombo, detectComboTypes } from '../engine/combos.js';
 import { MATRIX_RANKS } from './gameStateConstants.js';
 import { pickAutoTriple, pickAutoPair } from './autoComplete.js';
+import { useI18n } from '../i18n/index.js';
 
 export function useCardSelection({
   trumpRank,
@@ -11,6 +12,7 @@ export function useCardSelection({
   clearScoringResult,
   setNotice
 }) {
+  const { t } = useI18n();
   const [userCombos, setUserCombos] = useState([]);
   const [selectedIds, setSelectedIds] = useState([]);
   const [selectedTypeIndex, setSelectedTypeIndex] = useState(0);
@@ -103,12 +105,12 @@ export function useCardSelection({
   function confirmGroup() {
     if (isSolving) return;
     if (selectedCards.length === 0) {
-      setNotice('请先选择要成组的牌。');
+      setNotice(t('notices.selectCards'));
       return;
     }
 
     if (candidateTypes.length === 0) {
-      setNotice('当前选择无法组成合法牌型。');
+      setNotice(t('notices.invalidCombo'));
       return;
     }
 
@@ -116,7 +118,7 @@ export function useCardSelection({
     const combo = createCombo(selectedCards, trumpRank, picked);
 
     if (!combo) {
-      setNotice('成组失败，请重新选择。');
+      setNotice(t('notices.groupFailed'));
       return;
     }
 
@@ -134,7 +136,7 @@ export function useCardSelection({
     if (isSolving) return Promise.resolve();
     if (remainingCards.length === 0) {
       if (aiResult) {
-        setNotice('当前已完成组牌并给出 AI 推荐。');
+        setNotice(t('notices.groupedComplete'));
         return Promise.resolve();
       }
       return submitScoringFn();
@@ -184,7 +186,7 @@ export function useCardSelection({
     }
 
     if (generated.length === 0) {
-      setNotice('自动补全失败，请手动完成组牌。');
+      setNotice(t('notices.autoCompleteFailed'));
       return Promise.resolve();
     }
 
@@ -192,7 +194,11 @@ export function useCardSelection({
     setSelectedIds([]);
     setSelectedTypeIndex(0);
     setNotice(
-      `已自动补全：${tripleCount} 个三张，${pairCount} 个对子，${singleCount} 张单牌。正在提交并生成 AI 推荐。`
+      t('notices.autoCompleteSummary', {
+        triples: tripleCount,
+        pairs: pairCount,
+        singles: singleCount
+      })
     );
     return Promise.resolve();
   }

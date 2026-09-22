@@ -6,8 +6,10 @@ import {
   GOD_VIEW_TIME_LIMIT_MS,
   buildTableDealKey
 } from './gameStateConstants.js';
+import { useI18n } from '../i18n/index.js';
 
 export function useGodView({ setNotice, runGodViewWithWorker }) {
+  const { t } = useI18n();
   const [godViewEnabled, setGodViewEnabled] = useState(false);
   const [godViewStatus, setGodViewStatus] = useState('idle');
   const [godViewData, setGodViewData] = useState(null);
@@ -154,7 +156,7 @@ export function useGodView({ setNotice, runGodViewWithWorker }) {
 
   async function toggleGodView(tableDeal, aiSearchMode) {
     if (!tableDeal?.players?.length) {
-      setNotice('当前牌局缺少四家手牌数据，无法打开上帝视角。');
+      setNotice(t('notices.missingGodViewData'));
       return;
     }
 
@@ -196,7 +198,7 @@ export function useGodView({ setNotice, runGodViewWithWorker }) {
       }
     } catch (_error) {
       setGodViewStatus('failed');
-      setNotice('上帝视角分析失败，请重试。');
+      setNotice(t('notices.godViewFailed'));
     }
   }
 

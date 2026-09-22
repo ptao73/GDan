@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useI18n } from '../i18n/index.js';
 
 const RANK_ORDER = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
 
 export default function Header({
   onNewDeal,
   onSmartAction,
-  smartActionLabel = '自动补全',
+  smartActionLabel,
   smartActionIcon = '⚡',
   smartActionDisabled = false,
   onImport,
@@ -18,6 +19,7 @@ export default function Header({
 }) {
   const [compact, setCompact] = useState(false);
   const [importMenuOpen, setImportMenuOpen] = useState(false);
+  const { language, setLanguage, t } = useI18n();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,32 +42,32 @@ export default function Header({
   const actionItems = [
     {
       key: 'deal',
-      full: '新一局',
-      compact: '新一局',
+      full: t('app.newDeal'),
+      compact: t('app.newDeal'),
       icon: '↻',
       onClick: onNewDeal,
       disabled: newDealDisabled
     },
     {
       key: 'smart',
-      full: smartActionLabel,
-      compact: smartActionLabel,
+      full: smartActionLabel || t('app.autoComplete'),
+      compact: smartActionLabel || t('app.autoComplete'),
       icon: smartActionIcon,
       onClick: onSmartAction,
       disabled: smartActionDisabled
     },
     {
       key: 'import',
-      full: '导入',
-      compact: '导入',
+      full: t('app.import'),
+      compact: t('app.import'),
       icon: '⇅',
       onClick: () => setImportMenuOpen((open) => !open),
       disabled: importDisabled
     },
     {
       key: 'godview',
-      full: godViewEnabled ? '关闭透视' : '上帝视角',
-      compact: godViewEnabled ? '关闭透视' : '透视',
+      full: godViewEnabled ? t('app.closeGodView') : t('app.godView'),
+      compact: godViewEnabled ? t('app.closeGodView') : t('app.godViewCompact'),
       icon: '👁',
       onClick: onToggleGodView,
       disabled: godViewDisabled
@@ -88,9 +90,26 @@ export default function Header({
           <span className="hero-pearl-shell" aria-hidden="true">
             <img className="hero-pearl" src="/ornaments/peal.png" alt="" />
           </span>
-          <h1>掼蛋组牌评分系统</h1>
+          <h1>{t('app.title')}</h1>
         </div>
-        <div className="hero-actions" role="group" aria-label="快捷操作">
+        <div className="language-switcher" role="group" aria-label={t('language.switchTo')}>
+          <button
+            type="button"
+            className={language === 'zh' ? 'active' : ''}
+            onClick={() => setLanguage('zh')}
+          >
+            {t('language.zh')}
+          </button>
+          <span aria-hidden="true">|</span>
+          <button
+            type="button"
+            className={language === 'en' ? 'active' : ''}
+            onClick={() => setLanguage('en')}
+          >
+            {t('language.en')}
+          </button>
+        </div>
+        <div className="hero-actions" role="group" aria-label={t('app.quickActions')}>
           {actionItems.map((item) => {
             const actionButton = (
               <button
@@ -118,6 +137,12 @@ export default function Header({
                 {actionButton}
                 {importMenuOpen && !item.disabled ? (
                   <div className="hero-tools-menu import-menu" role="menu">
+                    <div className="import-guidance">
+                      <strong>{t('import.guidanceTitle')}</strong>
+                      <span>{t('import.guidanceOne')}</span>
+                      <span>{t('import.guidanceTwo')}</span>
+                      <span>{t('import.guidanceThree')}</span>
+                    </div>
                     <button
                       type="button"
                       className="hero-tools-item"
@@ -127,7 +152,7 @@ export default function Header({
                         onImport('image');
                       }}
                     >
-                      图片 / OCR 导入
+                      {t('labels.imageOcrImport')}
                     </button>
                     <button
                       type="button"
@@ -138,7 +163,7 @@ export default function Header({
                         onImport('json');
                       }}
                     >
-                      JSON 导入
+                      {t('labels.jsonImport')}
                     </button>
                   </div>
                 ) : null}

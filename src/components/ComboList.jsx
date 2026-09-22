@@ -1,7 +1,7 @@
-import { cardLabel } from '../engine/cards.js';
 import { comboKey, isBomb } from '../engine/combos.js';
 import { scoreComboNoRound, scoreScheme } from '../engine/scoring.js';
 import { comboRankVector, compareComboDisplayOrder } from '../utils/comboDisplay.js';
+import { localizedCardLabel, localizedComboLabel, useI18n } from '../i18n/index.js';
 import SolvingIndicator from './SolvingIndicator.jsx';
 
 function buildSortableItems(combos, trumpRank) {
@@ -19,9 +19,9 @@ function buildSortableItems(combos, trumpRank) {
     .sort(compareComboDisplayOrder);
 }
 
-function comboText(item) {
-  const cards = (item.combo.cards || []).map((card) => cardLabel(card)).join(' ');
-  return `${item.combo.label}（${item.total}分）：${cards}`;
+function comboText(item, t) {
+  const cards = (item.combo.cards || []).map((card) => localizedCardLabel(card, t)).join(' ');
+  return `${localizedComboLabel(item.combo, t)} (${item.total} ${t('labels.score')}): ${cards}`;
 }
 
 function comboCategory(item) {
@@ -41,6 +41,7 @@ function ComboColumn({
   onRemove = null,
   removeDisabled = false
 }) {
+  const { t } = useI18n();
   const canRemove = typeof onRemove === 'function';
 
   return (
@@ -57,14 +58,14 @@ function ComboColumn({
             return (
               <li key={`${key}-${item.originIndex}`} className={`combo-${category}`}>
                 <div className={`combo-line${canRemove ? ' combo-line-with-action' : ''}`}>
-                  <span className="combo-main-text">{comboText(item)}</span>
+                  <span className="combo-main-text">{comboText(item, t)}</span>
                   {canRemove ? (
                     <button
                       className="ghost combo-remove"
                       onClick={() => onRemove(item.originIndex)}
                       disabled={removeDisabled}
                     >
-                      拆
+                      {t('labels.remove')}
                     </button>
                   ) : null}
                 </div>
@@ -86,6 +87,7 @@ export default function ComboList({
   removeGroup,
   isSolving
 }) {
+  const { t } = useI18n();
   const sortedUserItems = buildSortableItems(userCombos, trumpRank);
   const sortedAiItems = aiResult ? buildSortableItems(aiResult.combos || [], trumpRank) : [];
   const userTotal = scoreScheme(userCombos, trumpRank).total;
@@ -94,17 +96,17 @@ export default function ComboList({
     <div className="combo-compare">
       <div className="combo-compare-grid">
         <ComboColumn
-          title={`我的组牌（总分 ${userTotal}）`}
+          title={`${t('labels.self')} (${t('labels.totalScore')} ${userTotal})`}
           items={sortedUserItems}
-          emptyText="尚未成组。"
+          emptyText={t('panels.groupedNone')}
           onRemove={removeGroup}
           removeDisabled={isSolving}
         />
 
         <ComboColumn
-          title={`AI推荐${aiResult ? `（总分 ${aiResult.score}）` : ''}`}
+          title={`${t('panels.aiRecommended')}${aiResult ? ` (${t('labels.totalScore')} ${aiResult.score})` : ''}`}
           items={sortedAiItems}
-          emptyText="完成组牌后将自动给出 AI 推荐。"
+          emptyText={t('panels.aiEmpty')}
           showLoading={aiStatus === 'running'}
           progress={aiSearchProgress}
         />
